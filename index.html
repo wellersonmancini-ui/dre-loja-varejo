@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motor DRE Shopee + ML V17 — Web</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --shopee:#EE4D2D; --shopee-dk:#C53E22;
+  --navy:#0f1624; --navy2:#1a2540; --navy3:#141d30;
+  --white:#fff;
+  --g50:#f8f9fa; --g100:#f0f2f5; --g200:#e8eaed; --g300:#d1d5db;
+  --g400:#9aa0ac; --g600:#666c7a; --g800:#2c3142;
+  --green:#00a854; --green-l:#e6f7ef;
+  --red:#d32f2f; --red-l:#fdecea;
+  --yellow:#f59e0b; --yellow-l:#fffbeb;
+  --blue:#0056b3; --blue-l:#e8f0fd;
+  --sans:'Barlow','Segoe UI',sans-serif;
+  --mono:'JetBrains Mono','Courier New',monospace;
+  --disp:'Barlow Condensed','Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--g100);color:var(--g800);min-height:100vh;}
+
+/* ── HEADER ── */
+.hdr{background:var(--navy);position:sticky;top:0;z-index:100;box-shadow:0 3px 20px rgba(0,0,0,.35);}
+.hdr-inner{max-width:1440px;margin:0 auto;display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+.logo{padding:14px 24px;display:flex;align-items:center;gap:10px;border-right:1px solid rgba(255,255,255,.07);}
+.logo-mark{width:32px;height:32px;background:var(--shopee);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;color:#fff;font-size:1rem;letter-spacing:-1px;}
+.logo h1{font-family:var(--disp);font-size:1.25rem;font-weight:700;letter-spacing:.5px;color:#fff;white-space:nowrap;}
+.logo h1 span{color:var(--shopee);}
+.tabs{display:flex;flex:1;overflow-x:auto;}
+.tab{background:transparent;border:none;color:var(--g400);padding:0 22px;height:56px;font-family:var(--sans);font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.tab:hover{color:#fff;background:rgba(255,255,255,.05);}
+.tab.active{color:var(--shopee);border-bottom-color:var(--shopee);}
+.tab .tab-badge{background:rgba(238,77,45,.2);color:var(--shopee);padding:1px 7px;border-radius:100px;font-size:.68rem;font-weight:700;}
+.status-bar{background:var(--navy2);color:rgba(255,255,255,.5);text-align:center;padding:7px 24px;font-size:.73rem;letter-spacing:.3px;}
+.status-bar strong{color:var(--shopee);}
+
+/* ── LAYOUT ── */
+.pg{max-width:1440px;margin:0 auto;padding:24px;}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
+.section{background:#fff;border-radius:10px;padding:24px;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,.06);}
+.section-title{font-family:var(--disp);font-size:1.05rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--shopee);display:inline-block;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+
+/* ── SETUP ── */
+.file-block{border:2px dashed var(--g200);border-radius:8px;padding:14px 16px;margin-bottom:10px;transition:border-color .2s;}
+.file-block:hover{border-color:var(--shopee);}
+.file-block label{font-size:.74rem;font-weight:700;color:var(--g600);display:block;margin-bottom:6px;}
+.file-block label .req{color:var(--shopee);}.file-block label .opt{color:var(--yellow);}
+input[type=file]{width:100%;font-size:.78rem;color:var(--g600);cursor:pointer;}
+input[type=month]{padding:10px 14px;border:2px solid var(--g200);border-radius:7px;font-family:var(--sans);font-size:1rem;width:100%;transition:border-color .2s;}
+input[type=month]:focus{outline:none;border-color:var(--shopee);}
+
+.btn-primary{background:var(--shopee);color:#fff;border:none;padding:14px 24px;border-radius:8px;font-family:var(--disp);font-size:1.1rem;font-weight:700;letter-spacing:.5px;cursor:pointer;width:100%;transition:all .2s;}
+.btn-primary:hover{background:var(--shopee-dk);transform:translateY(-1px);}
+.btn-primary:disabled{background:var(--g400);transform:none;cursor:not-allowed;}
+.btn-blue{background:var(--blue);color:#fff;border:none;padding:10px 16px;border-radius:7px;font-family:var(--sans);font-size:.88rem;font-weight:600;cursor:pointer;width:100%;transition:background .2s;margin-top:10px;}
+.btn-blue:hover{background:#004494;}
+.btn-sm{padding:4px 10px;border-radius:4px;font-size:.72rem;border:none;cursor:pointer;font-weight:700;}
+.btn-del{background:transparent;color:var(--red);font-size:1.05rem;padding:0 5px;border:none;cursor:pointer;}
+.btn-edt{background:transparent;color:var(--blue);font-size:1.05rem;padding:0 5px;border:none;cursor:pointer;}
+
+/* dictionary */
+.dict-row{display:flex;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.dict-row input{padding:8px 11px;border:1px solid var(--g200);border-radius:6px;font-family:var(--sans);font-size:.78rem;flex:1;min-width:80px;}
+.dict-row input:focus{outline:none;border-color:var(--blue);}
+.dict-list{list-style:none;max-height:240px;overflow-y:auto;margin-top:8px;}
+.dict-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--g200);border-radius:6px;margin-bottom:4px;font-size:.76rem;background:var(--g50);}
+.dict-item strong{font-size:.8rem;color:var(--navy);}
+.badge{background:var(--g200);padding:2px 8px;border-radius:100px;font-size:.66rem;font-weight:700;color:var(--g600);}
+.badge-extra{background:#fff3e0;color:#e65100;border:1px solid #ffb74d;}
+.srch{padding:8px 14px;border:1px solid var(--g300);border-radius:6px;font-family:var(--sans);font-size:.82rem;width:100%;margin-bottom:8px;}
+.srch:focus{outline:none;border-color:var(--blue);}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+.kpi{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,.06);border-left:4px solid var(--g300);}
+.kpi.pos{border-left-color:var(--green);}
+.kpi.neg{border-left-color:var(--red);}
+.kpi.info{border-left-color:var(--blue);}
+.kpi.warn{border-left-color:var(--yellow);}
+.kpi-lbl{font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.kpi-val{font-family:var(--mono);font-size:1.1rem;font-weight:600;color:var(--g800);}
+.kpi-val.red{color:var(--red);}.kpi-val.green{color:var(--green);}
+.kpi-hero{grid-column:span 3;background:var(--navy);border:none;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;}
+.kpi-hero .kpi-lbl{color:rgba(255,255,255,.55);font-size:.82rem;}
+.kpi-hero .kpi-val{color:#fff;font-size:1.9rem;}
+.kpi-hero .hero-pct{font-family:var(--mono);font-size:2.2rem;font-weight:700;color:var(--shopee);}
+
+/* ── DRE STATEMENT ── */
+.dre-wrap{font-family:var(--mono);font-size:.83rem;}
+.dre-section-hdr{background:var(--g100);color:var(--g600);font-family:var(--sans);font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 4px;margin-top:10px;border-radius:4px 4px 0 0;}
+.dre-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:4px;gap:8px;}
+.dre-row:hover{background:var(--g50);}
+.dre-row.i1{padding-left:28px;}.dre-row.i2{padding-left:44px;}
+.dre-row.sub{background:var(--blue-l);margin:3px 0;font-weight:700;color:var(--blue);}
+.dre-row.tot{background:var(--navy);color:#fff;margin:8px 0;font-weight:700;font-size:.92rem;padding:12px 16px;}
+.dre-row.tot .dre-pct{color:var(--shopee);}
+.dre-hr{border:none;border-top:1px dashed var(--g200);margin:3px 0;}
+.dre-lbl{display:flex;align-items:center;gap:8px;}
+.sgn{width:16px;display:inline-block;font-weight:700;}
+.sgn.p{color:var(--green);}.sgn.m{color:var(--red);}.sgn.e{color:var(--blue);}
+.dre-nums{display:flex;align-items:center;gap:12px;text-align:right;}
+.dre-v{font-weight:600;min-width:120px;text-align:right;}
+.dre-v.red{color:var(--red);}.dre-v.green{color:var(--green);}
+.dre-pct{font-size:.72rem;color:var(--g400);min-width:50px;text-align:right;}
+
+/* ── ANUNCIO CARDS ── */
+.anuncio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;}
+.a-card{background:#fff;border-radius:10px;box-shadow:0 1px 8px rgba(0,0,0,.08);overflow:hidden;}
+.a-card-hdr{background:var(--navy2);color:#fff;padding:14px 16px;}
+.a-card-hdr h3{font-family:var(--disp);font-size:1rem;font-weight:700;margin-bottom:1px;}
+.a-card-hdr small{color:rgba(255,255,255,.45);font-size:.68rem;}
+.a-card-body{padding:14px 16px;}
+.dm-row{display:flex;justify-content:space-between;padding:5px 0;font-size:.76rem;border-bottom:1px solid var(--g100);}
+.dm-row:last-child{border:none;}
+.dm-row.sub{font-weight:700;color:var(--navy);background:var(--g50);padding:6px 8px;border-radius:4px;margin:4px 0;border:none;}
+.dm-row.tot{font-weight:700;font-size:.88rem;margin-top:8px;padding:10px 10px;border-radius:6px;background:var(--navy);color:#fff;border:none;}
+.dm-lbl{color:var(--g600);}
+.dm-val{font-family:var(--mono);font-weight:600;}
+.dm-val.red{color:var(--red);}.dm-val.green{color:var(--green);}
+.a-bar{margin-top:12px;background:var(--g100);border-radius:4px;height:6px;overflow:hidden;}
+.a-bar-fill{height:100%;border-radius:4px;transition:width .4s ease;}
+.a-bar-lbl{font-size:.68rem;color:var(--g400);margin-top:4px;text-align:right;font-family:var(--mono);}
+
+/* ── SKU CARDS ── */
+.sku-srch{padding:10px 16px;border:2px solid var(--g200);border-radius:8px;font-family:var(--sans);font-size:.88rem;width:100%;margin-bottom:18px;}
+.sku-srch:focus{outline:none;border-color:var(--shopee);}
+.sku-card{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.06);margin-bottom:10px;overflow:hidden;border-left:5px solid var(--g300);}
+.sku-card.lpos{border-left-color:var(--green);}.sku-card.lneg{border-left-color:var(--red);}
+.sku-hdr{padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--g50);transition:background .15s;}
+.sku-hdr:hover{background:var(--g100);}
+.sku-code{font-family:var(--mono);font-size:.83rem;font-weight:700;color:var(--navy);}
+.sku-parent{font-size:.7rem;color:var(--g400);margin-top:2px;}
+.sku-right{text-align:right;}
+.sku-units{font-size:.68rem;color:var(--g400);}
+.sku-lucro{font-family:var(--mono);font-size:.95rem;font-weight:700;}
+.sku-lucro.pos{color:var(--green);}.sku-lucro.neg{color:var(--red);}
+.sku-chev{color:var(--g400);font-size:.75rem;margin-left:8px;transition:transform .2s;display:inline-block;}
+.sku-chev.open{transform:rotate(180deg);}
+.sku-body{display:none;border-top:1px solid var(--g100);}
+.sku-body.open{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.sku-col{padding:16px;}
+.sku-col+.sku-col{border-left:1px solid var(--g100);}
+.sku-col-title{font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.sm-row{display:flex;justify-content:space-between;padding:4px 0;font-size:.76rem;border-bottom:1px dashed var(--g100);font-family:var(--mono);}
+.sm-row:last-child{border:none;}
+.sm-row.sub{background:var(--g50);padding:5px 8px;border-radius:4px;font-weight:700;color:var(--navy);border:none;margin:3px 0;}
+.sm-row.tot{background:var(--navy);color:#fff;padding:9px 10px;border-radius:6px;font-weight:700;font-size:.84rem;border:none;margin-top:8px;}
+.sm-lbl{color:var(--g600);}
+.sm-val.red{color:var(--red);}.sm-val.green{color:var(--green);}
+.sku-metrics{display:flex;flex-direction:column;gap:8px;}
+.sku-met{background:var(--g50);padding:10px 12px;border-radius:7px;}
+.sku-met-lbl{font-size:.65rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.3px;}
+.sku-met-val{font-family:var(--mono);font-size:.9rem;font-weight:700;color:var(--navy);margin-top:2px;}
+.sku-met-val.green{color:var(--green);}.sku-met-val.red{color:var(--red);}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.78rem;}
+th{background:var(--g50);padding:10px 8px;text-align:left;font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--g200);}
+th.r,td.r{text-align:right;}
+td{padding:9px 8px;border-bottom:1px solid var(--g100);vertical-align:middle;}
+tr:hover td{background:var(--g50);}
+td.mono{font-family:var(--mono);}
+td.red{color:var(--red);font-family:var(--mono);}
+td.green{color:var(--green);font-family:var(--mono);font-weight:600;}
+td.b{font-weight:700;}
+
+/* ── EMPTY STATE ── */
+.empty{color:var(--g400);text-align:center;padding:40px 20px;font-size:.9rem;}
+.empty svg{display:block;margin:0 auto 14px;opacity:.3;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:1fr 1fr;}.kpi-hero{grid-column:span 2;}
+  .grid2{grid-template-columns:1fr;}
+  .sku-body.open{grid-template-columns:1fr;}
+  .sku-col+.sku-col{border-left:none;border-top:1px solid var(--g100);}
+}
+.custo-tbl{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px;}
+.custo-tbl th{background:var(--navy);color:rgba(255,255,255,.6);padding:8px 10px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:left;}
+.custo-tbl th.r{text-align:right;}
+.custo-tbl td{padding:7px 10px;border-bottom:1px solid var(--g100);vertical-align:middle;}
+.custo-tbl tr:last-child td{border:none;}
+.custo-tbl tr:hover td{background:var(--g50);}
+.custo-tbl input[type=number]{padding:5px 8px;border:1px solid var(--g200);border-radius:5px;font-family:var(--mono);font-size:.82rem;width:110px;text-align:right;}
+.custo-tbl input[type=number]:focus{outline:none;border-color:var(--shopee);}
+.custo-tbl input[type=text]{padding:5px 8px;border:1px solid var(--g200);border-radius:5px;font-family:var(--sans);font-size:.78rem;width:130px;}
+.custo-tbl input[type=text]:focus{outline:none;border-color:var(--shopee);}
+.tag-fonte{font-size:.65rem;padding:2px 7px;border-radius:100px;font-weight:700;}
+.tag-auto{background:#e6f7ef;color:var(--green);border:1px solid #b7dfca;}
+.tag-manual{background:#fff3e0;color:#e65100;border:1px solid #ffb74d;}
+.tag-zero{background:var(--red-l);color:var(--red);border:1px solid #f5c6c6;}
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:1fr;}.kpi-hero{grid-column:span 1;}
+  .anuncio-grid{grid-template-columns:1fr;}
+  .pg{padding:12px;}
+}
+
+/* ── LOGIN GATE ── */
+.login-gate{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.login-box{background:#fff;border-radius:12px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.login-box .logo-mark{width:48px;height:48px;margin:0 auto 18px;background:var(--shopee);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;color:#fff;font-size:1.3rem;letter-spacing:-1px;}
+.login-box h2{font-family:var(--disp);font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.login-box p{font-size:.85rem;color:var(--g600);margin-bottom:22px;line-height:1.5;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 18px;border:2px solid var(--g200);border-radius:8px;background:#fff;font-family:var(--sans);font-size:.9rem;font-weight:600;color:var(--g800);cursor:pointer;transition:border-color .2s;}
+.btn-google:hover{border-color:var(--shopee);}
+.login-erro{display:none;margin-top:16px;padding:10px 12px;background:var(--red-l);color:var(--red);border-radius:6px;font-size:.78rem;text-align:left;line-height:1.4;}
+.user-badge{display:flex;align-items:center;gap:10px;padding:14px 20px;color:rgba(255,255,255,.7);font-size:.76rem;}
+.user-badge button{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;}
+.user-badge button:hover{border-color:#fff;color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN GATE ════════════════ -->
+<div class="login-gate" id="login-gate">
+  <div class="login-box">
+    <div class="logo-mark">DRE</div>
+    <h2>Motor DRE — Acesso Restrito</h2>
+    <p>Este sistema guarda dados financeiros da empresa. Entre com a conta Google autorizada para continuar.</p>
+    <button class="btn-google" onclick="entrarComGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+      Entrar com Google
+    </button>
+    <div class="login-erro" id="login-erro"></div>
+  </div>
+</div>
+
+<div id="app-shell" style="display:none;">
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="logo">
+      <div class="logo-mark">DRE</div>
+      <h1>Motor <span>DRE</span> Shopee + ML</h1>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" onclick="mudarTab('config',this)">⚙️ Configuração</button>
+      <button class="tab" onclick="mudarTab('dre-empresa',this)">📊 DRE Empresa</button>
+      <button class="tab" onclick="mudarTab('dre-anuncio',this)" id="tab-anuncio">🏷️ DRE por Anúncio</button>
+      <button class="tab" onclick="mudarTab('dre-sku',this)" id="tab-sku">📦 DRE por SKU</button>
+      <button class="tab" onclick="mudarTab('tabelas',this)">📋 Tabelas</button>
+      <button class="tab" onclick="mudarTab('auditoria-ml',this)" id="tab-auditoria-ml">🔎 Auditoria ML</button>
+    </nav>
+    <div class="user-badge">
+      <span id="user-email">—</span>
+      <button onclick="sair()">Sair</button>
+    </div>
+  </div>
+  <div class="status-bar" id="status-bar">Aguardando carregamento dos ficheiros...</div>
+</header>
+
+<main class="pg">
+
+  <!-- ════════════════ TAB: CONFIG ════════════════ -->
+  <div class="tab-pane active" id="pane-config">
+    <div class="grid2">
+
+      <!-- FILES -->
+      <div class="section">
+        <div class="section-title">1. Carregamento de Ficheiros</div>
+
+        <div style="font-size:.72rem;padding:8px 10px;border-radius:6px;margin-bottom:14px;background:var(--green-l);color:#0a6b3d;">☁️ Conectado à nuvem — dicionários, custos e meses processados ficam salvos e acessíveis para quem tiver login autorizado.</div>
+
+        <div id="cloud-meses-block" style="margin-bottom:16px;padding:12px;border:1px dashed var(--g300);border-radius:8px;">
+          <label style="font-size:.72rem;font-weight:700;color:var(--g600);display:block;margin-bottom:6px;">Já processado antes? Carregue direto da nuvem (sem re-upload):</label>
+          <div style="display:flex;gap:8px;">
+            <select id="seletorMesNuvem" style="flex:1;padding:8px 10px;border:1px solid var(--g200);border-radius:6px;font-size:.82rem;"><option value="">—</option></select>
+            <button class="btn-sm" style="background:var(--blue);color:#fff;padding:8px 14px;" onclick="carregarMesDaNuvem()">Carregar</button>
+          </div>
+        </div>
+
+        <label style="font-size:.8rem;font-weight:700;color:var(--g600);display:block;margin-bottom:6px;">Mês de Análise</label>
+        <input type="month" id="mesFiltro" style="margin-bottom:16px;">
+
+        <div class="file-block">
+          <label>Relatório SHOPEE — Vendas <span class="req">*Obrigatório</span></label>
+          <input type="file" id="arquivoShopee" accept=".csv,.xlsx,.xls">
+        </div>
+        <div class="file-block">
+          <label>Ficheiro FINANCEIRO.xlsx <span class="req">*Obrigatório</span></label>
+          <input type="file" id="arquivoFinancas" accept=".csv,.xlsx,.xls">
+        </div>
+        <div class="file-block">
+          <label>SHOPEE ADS <span class="opt">(Opcional)</span></label>
+          <input type="file" id="arquivoAds" accept=".csv,.xlsx,.xls">
+        </div>
+        <div class="file-block">
+          <label>AFILIADOS <span class="opt">(Opcional)</span></label>
+          <input type="file" id="arquivoAfiliados" accept=".csv,.xlsx,.xls">
+        </div>
+        <div class="file-block" style="border-top:1px dashed var(--g300);padding-top:12px;margin-top:4px;">
+          <label>MERCADO LIVRE — Conciliação por Vendas <span class="opt">(Opcional)</span></label>
+          <input type="file" id="arquivoMLConciliacao" accept=".csv,.xlsx,.xls">
+        </div>
+        <div class="file-block">
+          <label>MERCADO LIVRE — Faturamento / Tarifas <span class="opt">(Opcional — captura frete que "vaza" pro mês seguinte)</span></label>
+          <input type="file" id="arquivoMLFaturamento" accept=".csv,.xlsx,.xls">
+        </div>
+
+        <button class="btn-primary" onclick="processarCruzamentoDeDados()" id="btnCalcular" style="margin-top:10px;">
+          ⚡ CRUZAR DADOS E GERAR DRE
+        </button>
+      </div>
+
+      <!-- DICTIONARY -->
+      <div class="section">
+        <div class="section-title">2. Dicionário de SKUs</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn-blue" style="margin:0;" onclick="autoMapearShopee()" id="btnAutoMap">🔮 Auto-Mapear SKUs da Shopee</button>
+          <button class="btn-sm btn-del" style="padding:6px 12px;font-size:.78rem;" onclick="limparDicionario()">Limpar Tudo</button>
+        </div>
+
+        <div style="font-size:.7rem;color:var(--g600);margin-bottom:12px;background:var(--yellow-l);padding:7px 10px;border-radius:6px;border-left:3px solid var(--yellow);">
+          💡 SKUs com "NA" no final são auto-detectados como combos com Navalhete.
+        </div>
+
+        <div style="font-size:.73rem;font-weight:700;color:var(--g600);margin-bottom:6px;">ADICIONAR / EDITAR SKU:</div>
+        <div class="dict-row">
+          <input type="text" id="skuInput" placeholder="Variação (código SKU)">
+          <input type="text" id="skuPaiInput" placeholder="Anúncio Pai">
+        </div>
+        <div class="dict-row">
+          <input type="text" id="familiaInput" placeholder="Família (TONICO, CANETA...)">
+          <input type="number" id="kitInput" placeholder="Qtd Kit" value="1" style="max-width:90px;">
+        </div>
+        <div class="dict-row">
+          <input type="text" id="extraFamiliaInput" placeholder="Extra Família (Ex: NAVALHETE)">
+          <input type="number" id="extraKitInput" placeholder="Qtd Extra" value="0" style="max-width:90px;">
+          <button onclick="adicionarDicionario()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.82rem;">Gravar</button>
+        </div>
+
+        <input type="text" class="srch" id="pesquisaDicio" placeholder="🔍 Pesquisar SKU..." onkeyup="pesquisarDicio()">
+        <ul class="dict-list" id="listaDicio"></ul>
+      </div>
+
+      <!-- DICTIONARY ML -->
+      <div class="section">
+        <div class="section-title">3. Dicionário de SKUs — Mercado Livre</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn-blue" style="margin:0;" onclick="autoMapearML()" id="btnAutoMapML">🔮 Auto-Mapear SKUs do ML</button>
+          <button class="btn-sm btn-del" style="padding:6px 12px;font-size:.78rem;" onclick="limparDicionarioML()">Limpar Tudo</button>
+        </div>
+
+        <div style="font-size:.7rem;color:var(--g600);margin-bottom:12px;background:var(--blue-l);padding:7px 10px;border-radius:6px;border-left:3px solid var(--blue);">
+          💡 Aponte cada SKU do ML pra mesma Família/Anúncio Pai já usados na Shopee — assim o custo (CPV) e o agrupamento por anúncio ficam unificados entre os dois canais.
+        </div>
+
+        <div style="font-size:.73rem;font-weight:700;color:var(--g600);margin-bottom:6px;">ADICIONAR / EDITAR SKU ML:</div>
+        <div class="dict-row">
+          <input type="text" id="skuInputML" placeholder="SKU do Mercado Livre">
+          <input type="text" id="skuPaiInputML" placeholder="Anúncio Pai (mesmo nome da Shopee)">
+        </div>
+        <div class="dict-row">
+          <input type="text" id="familiaInputML" placeholder="Família (TONICO, CANETA...)">
+          <input type="number" id="kitInputML" placeholder="Qtd Kit" value="1" style="max-width:90px;">
+        </div>
+        <div class="dict-row">
+          <input type="text" id="extraFamiliaInputML" placeholder="Extra Família (Ex: NAVALHETE)">
+          <input type="number" id="extraKitInputML" placeholder="Qtd Extra" value="0" style="max-width:90px;">
+          <button onclick="adicionarDicionarioML()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.82rem;">Gravar</button>
+        </div>
+
+        <input type="text" class="srch" id="pesquisaDicioML" placeholder="🔍 Pesquisar SKU ML..." onkeyup="pesquisarDicioML()">
+        <ul class="dict-list" id="listaDicioML"></ul>
+      </div>
+
+    </div>
+
+    <!-- CUSTOS POR FAMÍLIA -->
+    <div class="section" style="margin-top:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div class="section-title" style="margin-bottom:0;padding-bottom:0;border:none;">3. Custo Unitário por Família de Produto</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="tag-fonte tag-auto">Auto = detectado pelo financeiro</span>
+          <span class="tag-fonte tag-manual">Manual = você definiu</span>
+          <span class="tag-fonte tag-zero">Zero = sem custo definido</span>
+        </div>
+      </div>
+      <div style="font-size:.72rem;color:var(--g600);margin-bottom:12px;background:var(--yellow-l);padding:8px 12px;border-radius:6px;border-left:3px solid var(--yellow);">
+        💡 <strong>Use esta tabela para meses sem compra.</strong> Os custos aqui salvos são usados como fallback quando o ficheiro financeiro não tem compras daquela família naquele mês. A coluna "Fonte" mostra se o custo veio do ficheiro (Auto) ou daqui (Manual).
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:var(--g600);display:block;margin-bottom:4px;">Família</label>
+          <input type="text" id="custo-fam-input" placeholder="Ex: CANETA" style="padding:8px 12px;border:1px solid var(--g200);border-radius:6px;font-size:.82rem;width:150px;">
+        </div>
+        <div>
+          <label style="font-size:.72rem;font-weight:700;color:var(--g600);display:block;margin-bottom:4px;">Custo Unitário (R$)</label>
+          <input type="number" id="custo-val-input" placeholder="0,00" step="0.01" min="0" style="padding:8px 12px;border:1px solid var(--g200);border-radius:6px;font-size:.82rem;width:130px;">
+        </div>
+        <button onclick="salvarCustoManual()" style="padding:8px 18px;background:var(--shopee);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.82rem;height:36px;">Salvar Custo</button>
+        <button onclick="limparCustosManual()" style="padding:8px 14px;background:var(--g400);color:#fff;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;height:36px;">Limpar Tudo</button>
+      </div>
+      <table class="custo-tbl">
+        <thead><tr>
+          <th>Família</th>
+          <th class="r">Custo Unitário (R$/un)</th>
+          <th>Fonte</th>
+          <th>Ações</th>
+        </tr></thead>
+        <tbody id="tbl-custos-manual"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ════════════════ TAB: DRE EMPRESA ════════════════ -->
+  <div class="tab-pane" id="pane-dre-empresa">
+
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi info"><div class="kpi-lbl">Receita Bruta</div><div class="kpi-val" id="kpi-bruta">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Taxas da Plataforma</div><div class="kpi-val red" id="kpi-taxas">—</div></div>
+      <div class="kpi info"><div class="kpi-lbl">Receita Líquida</div><div class="kpi-val" id="kpi-liquida">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">CPV (Custo Físico)</div><div class="kpi-val red" id="kpi-cpv">—</div></div>
+      <div class="kpi pos"><div class="kpi-lbl">Lucro Bruto</div><div class="kpi-val green" id="kpi-lbruto">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Total Despesas</div><div class="kpi-val red" id="kpi-desp">—</div></div>
+      <div class="kpi-hero kpi">
+        <div>
+          <div class="kpi-lbl">LUCRO LÍQUIDO DO MÊS</div>
+          <div class="kpi-val" id="kpi-ll">—</div>
+        </div>
+        <div class="hero-pct" id="kpi-margem">—</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">DRE — Demonstração do Resultado do Exercício</div>
+      <div class="dre-wrap" id="dre-empresa-stmt">
+        <div class="empty">⚡ Carregue os ficheiros e clique em "Cruzar Dados" para gerar o DRE.</div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:2px dashed var(--g300);margin:32px 0;">
+
+    <div class="section-title" style="font-size:1.05rem;">📦 DRE Empresa — MERCADO LIVRE</div>
+    <div style="font-size:.72rem;color:var(--g600);margin:-6px 0 16px;">Sem Ads/Afiliados do ML (ainda não coletados) — já com Despesas Operacionais Gerais rateadas.</div>
+
+    <div class="kpi-grid" id="kpi-grid-ml">
+      <div class="kpi info"><div class="kpi-lbl">Receita Bruta ML</div><div class="kpi-val" id="kpiml-bruta">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Taxas ML (Comissão+Frete)</div><div class="kpi-val red" id="kpiml-taxas">—</div></div>
+      <div class="kpi info"><div class="kpi-lbl">Receita Líquida ML</div><div class="kpi-val" id="kpiml-liquida">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">CPV (Custo Físico)</div><div class="kpi-val red" id="kpiml-cpv">—</div></div>
+      <div class="kpi pos"><div class="kpi-lbl">Lucro Bruto ML</div><div class="kpi-val green" id="kpiml-lbruto">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Desp. Operacionais (rateada)</div><div class="kpi-val red" id="kpiml-desp">—</div></div>
+      <div class="kpi-hero kpi">
+        <div>
+          <div class="kpi-lbl">LUCRO LÍQUIDO ML DO MÊS</div>
+          <div class="kpi-val" id="kpiml-ll">—</div>
+        </div>
+        <div class="hero-pct" id="kpiml-margem">—</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">DRE Mercado Livre — Demonstração do Resultado</div>
+      <div class="dre-wrap" id="dre-ml-stmt">
+        <div class="empty">⚡ Carregue os ficheiros do ML e clique em "Cruzar Dados".</div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:2px dashed var(--g300);margin:32px 0;">
+
+    <div class="section-title" style="font-size:1.05rem;">🔗 DRE Empresa — COMBINADO (Shopee + Mercado Livre)</div>
+    <div style="font-size:.72rem;color:var(--g600);margin:-6px 0 16px;">Visão consolidada do negócio inteiro — Ads/Afiliados só existem na Shopee, Despesas Operacionais já rateadas nos dois canais.</div>
+
+    <div class="kpi-grid" id="kpi-grid-combo">
+      <div class="kpi info"><div class="kpi-lbl">Receita Bruta Total</div><div class="kpi-val" id="kpicombo-bruta">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Taxas Totais (Shopee+ML)</div><div class="kpi-val red" id="kpicombo-taxas">—</div></div>
+      <div class="kpi info"><div class="kpi-lbl">Receita Líquida Total</div><div class="kpi-val" id="kpicombo-liquida">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">CPV Total</div><div class="kpi-val red" id="kpicombo-cpv">—</div></div>
+      <div class="kpi pos"><div class="kpi-lbl">Lucro Bruto Total</div><div class="kpi-val green" id="kpicombo-lbruto">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Total Despesas</div><div class="kpi-val red" id="kpicombo-desp">—</div></div>
+      <div class="kpi-hero kpi">
+        <div>
+          <div class="kpi-lbl">LUCRO LÍQUIDO TOTAL DO MÊS</div>
+          <div class="kpi-val" id="kpicombo-ll">—</div>
+        </div>
+        <div class="hero-pct" id="kpicombo-margem">—</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">DRE Combinado — Demonstração do Resultado (Shopee + ML)</div>
+      <div class="dre-wrap" id="dre-combo-stmt">
+        <div class="empty">⚡ Carregue os ficheiros e clique em "Cruzar Dados".</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════ TAB: DRE POR ANÚNCIO ════════════════ -->
+  <div class="tab-pane" id="pane-dre-anuncio">
+    <div class="section" style="padding:16px 24px;">
+      <div class="flex-between">
+        <div class="section-title" style="margin-bottom:0;padding-bottom:0;border:none;">DRE por Anúncio / SKU Principal</div>
+        <input type="text" class="srch" id="srch-anuncio" placeholder="🔍 Filtrar anúncios..." onkeyup="filtrarAnuncios()" style="margin:0;width:260px;">
+      </div>
+    </div>
+    <div class="anuncio-grid" id="anuncio-grid">
+      <div class="empty" style="grid-column:1/-1">⚡ Carregue os ficheiros para ver os DREs por anúncio.</div>
+    </div>
+  </div>
+
+  <!-- ════════════════ TAB: DRE POR SKU ════════════════ -->
+  <div class="tab-pane" id="pane-dre-sku">
+    <div class="section" style="padding:16px 24px;margin-bottom:12px;">
+      <div class="flex-between">
+        <div class="section-title" style="margin-bottom:0;padding-bottom:0;border:none;">DRE por Variação / SKU</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span style="font-size:.75rem;color:var(--g400);" id="sku-count">—</span>
+          <input type="text" id="srch-sku" class="sku-srch" placeholder="🔍 Filtrar SKU..." onkeyup="filtrarSKUs()" style="margin:0;width:260px;">
+        </div>
+      </div>
+    </div>
+    <div id="sku-cards">
+      <div class="empty">⚡ Carregue os ficheiros para ver os DREs por SKU.</div>
+    </div>
+  </div>
+
+  <!-- ════════════════ TAB: TABELAS ════════════════ -->
+  <div class="tab-pane" id="pane-tabelas">
+
+    <div class="section">
+      <div class="section-title">Resumo por Família de Produto (Stock Físico) — SHOPEE</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Família</th>
+            <th class="r">Saídas (und)</th>
+            <th class="r">Faturamento Bruto</th>
+            <th class="r">Taxa Plataforma</th>
+            <th class="r">Fat. Líquido</th>
+            <th class="r">Custo/un</th>
+            <th class="r">Custo Total</th>
+            <th class="r">Desp. Operacionais</th>
+            <th class="r">Lucro Líquido</th>
+          </tr></thead>
+          <tbody id="tbl-familias"><tr><td colspan="9" class="empty">Aguardando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Resumo por Família de Produto (Stock Físico) — MERCADO LIVRE</div>
+      <div style="font-size:.7rem;color:var(--g600);margin-bottom:10px;">Já com rateio de Despesas Operacionais Gerais (proporcional ao faturamento combinado Shopee+ML). Sem Ads/Afiliados do ML (ainda não coletados).</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Família</th>
+            <th class="r">Saídas (und)</th>
+            <th class="r">Faturamento Bruto</th>
+            <th class="r">Comissão ML</th>
+            <th class="r">Frete Líquido</th>
+            <th class="r">Fat. Líquido</th>
+            <th class="r">Custo/un</th>
+            <th class="r">Custo Total</th>
+            <th class="r">Desp. Operacionais</th>
+            <th class="r">Lucro Líquido</th>
+          </tr></thead>
+          <tbody id="tbl-familias-ml"><tr><td colspan="10" class="empty">Aguardando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Resumo por Família de Produto (Stock Físico) — COMBINADO (Shopee + ML)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Família</th>
+            <th class="r">Saídas (und)</th>
+            <th class="r">Faturamento Bruto</th>
+            <th class="r">Taxas Total</th>
+            <th class="r">Fat. Líquido</th>
+            <th class="r">Custo Total</th>
+            <th class="r">Desp. Operacionais</th>
+            <th class="r">Lucro (Shopee líq. + ML bruto)</th>
+          </tr></thead>
+          <tbody id="tbl-familias-combo"><tr><td colspan="8" class="empty">Aguardando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Detalhe por Variação</div>
+      <div class="flex-between">
+        <span style="font-size:.8rem;color:var(--g400);">Todas as variações do período</span>
+        <input type="text" class="srch" id="srch-tbl" onkeyup="filtrarTblVar()" placeholder="🔍 Filtrar..." style="margin:0;width:260px;">
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Variação / SKU</th>
+            <th class="r">Qtd</th>
+            <th class="r">Fat. Bruto</th>
+            <th class="r">Fat. Líquido</th>
+            <th class="r">CPV Total</th>
+            <th class="r">MKT + Desp</th>
+            <th class="r">Lucro/un</th>
+            <th class="r">Lucro Total</th>
+          </tr></thead>
+          <tbody id="tbl-variacoes"><tr><td colspan="8" class="empty">Aguardando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════ TAB: AUDITORIA ML ════════════════ -->
+  <div class="tab-pane" id="pane-auditoria-ml">
+    <div class="section">
+      <div class="section-title">Auditoria ML — Vendas Agrupadas por Operação</div>
+      <div style="font-size:.78rem;color:var(--g600);margin-bottom:14px;background:var(--yellow-l);padding:10px 12px;border-radius:6px;border-left:3px solid var(--yellow);">
+        💡 <strong>Como conferir:</strong> pegue o "Número do pacote" de qualquer linha abaixo, abra essa venda no painel do Mercado Livre
+        (<span class="mono">vendedores.mercadolivre.com.br/vendas/{número}/detalhe</span>) e compare o "Total" da tela com a coluna "Valor Líquido" aqui.
+        Cada linha já representa a venda <strong>agrupada</strong> (várias linhas do relatório original somadas em uma só) — é assim que evitamos contar quantidade/faturamento em dobro.
+        <br><br>
+        ⚠️ Em vendas por <strong>xd_drop_off (você despacha)</strong> ou <strong>self_service</strong>, o próprio Mercado Livre não preenche o "Número do pacote" na planilha — nesses casos a coluna mostra o "nº do envio" como alternativa. Pra conferir essas, procure pelo "Número da operação" direto na busca da Central de Vendedores &gt; Vendas.
+      </div>
+      <div class="flex-between">
+        <span style="font-size:.8rem;color:var(--g400);" id="audit-count">—</span>
+        <input type="text" class="srch" id="srch-audit" onkeyup="filtrarAuditoriaML()" placeholder="🔍 Filtrar por SKU ou pacote..." style="margin:0;width:280px;">
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Número da Operação</th>
+            <th>Número do Pacote</th>
+            <th>SKU</th>
+            <th>Item</th>
+            <th class="r">Qtd</th>
+            <th class="r">Linhas Agrupadas</th>
+            <th class="r">Valor Bruto</th>
+            <th class="r">Comissão</th>
+            <th class="r">Frete Líquido</th>
+            <th class="r">Valor Líquido</th>
+          </tr></thead>
+          <tbody id="tbl-auditoria-ml"><tr><td colspan="10" class="empty">⚡ Carregue os ficheiros do Mercado Livre e gere o DRE para ver a auditoria.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+</div><!-- /#app-shell -->
+
+<script>
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let dicionarioSkus = {};
+let dicionarioSkusML = {};
+let dreData = null;
+let auditoriaML = [];   // vendas ML agrupadas por operação, pra conferência manual
+let custosManual = {};  // { 'FAMILIA': valor } — custo unitário salvo pelo usuário
+let db = null;           // instância do Firestore — null até o login ser confirmado
+
+try { custosManual = JSON.parse(localStorage.getItem('shopee_dre_v16_custos')) || {}; } catch(e){}
+
+try { dicionarioSkus = JSON.parse(localStorage.getItem('shopee_dre_v16_dicio')) || {}; } catch(e){}
+try { dicionarioSkusML = JSON.parse(localStorage.getItem('ml_dre_v17_dicio')) || {}; } catch(e){}
+
+// ══════════════════════════════════════
+//  NUVEM (Firebase — Auth com Google + Firestore)
+// ══════════════════════════════════════
+// ⚠️ CONFIGURAÇÃO OBRIGATÓRIA: cole aqui o objeto "firebaseConfig" do seu projeto
+// (Firebase Console → ⚙️ Configurações do projeto → Seus apps → ícone </> Web).
+const firebaseConfig = {
+  apiKey: "AIzaSyAp2DsvkQpVKHaYeFvs8_f0gQ2gy67td_g",
+  authDomain: "dre-loja-varejo.firebaseapp.com",
+  projectId: "dre-loja-varejo",
+  storageBucket: "dre-loja-varejo.firebasestorage.app",
+  messagingSenderId: "131943850856",
+  appId: "1:131943850856:web:dab4a195d301651f73acdd"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Remove Sets (ex: dreAncMap[pai].canais) antes de gravar — o Firestore só aceita JSON puro.
+function limparParaJSON(obj){
+  return JSON.parse(JSON.stringify(obj, (k,v)=> v instanceof Set ? [...v] : v));
+}
+
+function entrarComGoogle(){
+  document.getElementById('login-erro').style.display='none';
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e=>{
+    document.getElementById('login-erro').textContent = 'Erro ao entrar: '+e.message;
+    document.getElementById('login-erro').style.display='block';
+  });
+}
+
+function sair(){ auth.signOut(); }
+
+// Controla quem entra: as regras de segurança do Firestore (configuradas no console) são
+// que decidem de verdade quem pode ler/gravar — este listener só reage ao resultado.
+auth.onAuthStateChanged(async (user)=>{
+  const gate=document.getElementById('login-gate');
+  const shell=document.getElementById('app-shell');
+  const erro=document.getElementById('login-erro');
+  if(!user){
+    db=null;
+    gate.style.display='flex';
+    shell.style.display='none';
+    return;
+  }
+  db = firebase.firestore();
+  try{
+    // Leitura de teste: se o e-mail não estiver liberado nas regras do Firestore, isso rejeita.
+    await db.doc('config/dicionario_shopee').get();
+  } catch(e){
+    erro.textContent = `A conta ${user.email} ainda não tem acesso liberado a este sistema. Peça para quem administra adicionar este e-mail nas regras do Firestore.`;
+    erro.style.display='block';
+    await auth.signOut();
+    return;
+  }
+  document.getElementById('user-email').textContent = user.email;
+  gate.style.display='none';
+  shell.style.display='';
+  await bootApp();
+});
+
+// Se existir dado salvo na nuvem, ele tem prioridade sobre o que veio do localStorage
+// (que só serve de ponto de partida/offline). Se a nuvem ainda não tiver nada, o que já
+// estava no localStorage deste navegador continua valendo até a próxima gravação.
+async function carregarConfigDaNuvem(){
+  try{
+    const [dShopee,dML,dCustos]=await Promise.all([
+      db.doc('config/dicionario_shopee').get(),
+      db.doc('config/dicionario_ml').get(),
+      db.doc('config/custos_manuais').get(),
+    ]);
+    if(dShopee.exists && dShopee.data().skus) dicionarioSkus=dShopee.data().skus;
+    if(dML.exists && dML.data().skus) dicionarioSkusML=dML.data().skus;
+    if(dCustos.exists && dCustos.data().custos) custosManual=dCustos.data().custos;
+  } catch(e){ console.error('Erro ao carregar configuração da nuvem', e); }
+}
+
+async function popularSeletorMeses(){
+  const sel=document.getElementById('seletorMesNuvem');
+  if(!db||!sel) return;
+  try{
+    const snap=await db.collection('meses').get();
+    const meses=snap.docs.map(d=>d.id).sort().reverse();
+    sel.innerHTML = meses.length
+      ? '<option value="">—</option>'+meses.map(m=>`<option value="${m}">${m}</option>`).join('')
+      : '<option value="">Nenhum mês processado ainda</option>';
+  } catch(e){ console.error('Erro ao listar meses da nuvem', e); }
+}
+
+async function carregarMesDaNuvem(){
+  if(!db) return;
+  const mes=document.getElementById('seletorMesNuvem').value;
+  if(!mes) return;
+  try{
+    const doc=await db.doc('meses/'+mes).get();
+    if(!doc.exists){ alert('Mês não encontrado na nuvem.'); return; }
+    const data=doc.data();
+    dreData=data.dreData;
+    auditoriaML=data.auditoriaML||[];
+    renderizarAuditoriaML(auditoriaML);
+    renderizarDREEmpresa();
+    renderizarDREAnuncios();
+    renderizarDRESKUs();
+    renderizarTabelas();
+    document.getElementById('mesFiltro').value=mes;
+    const p=mes.split('-'); const nomeMes=new Date(+p[0],+p[1]-1,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+    document.getElementById('status-bar').innerHTML=`Período: <strong>${nomeMes.toUpperCase()}</strong> (carregado da nuvem) &nbsp;|&nbsp; ${Object.keys(dreData.variacoes).length} SKUs &nbsp;|&nbsp; ${Object.keys(dreData.anuncios).length} Anúncios &nbsp;|&nbsp; Faturamento: <strong>${fmt(dreData.empresa.fatBruto)}</strong>`;
+    document.getElementById('tab-anuncio').innerHTML=`🏷️ DRE por Anúncio <span class="tab-badge">${Object.keys(dreData.anuncios).length}</span>`;
+    document.getElementById('tab-sku').innerHTML=`📦 DRE por SKU <span class="tab-badge">${Object.keys(dreData.variacoes).length}</span>`;
+    mudarTab('dre-empresa', document.querySelectorAll('.tab')[1]);
+  } catch(e){ alert('Erro ao carregar mês da nuvem.'); console.error(e); }
+}
+
+async function bootApp(){
+  await carregarConfigDaNuvem();
+  renderizarDicio();
+  renderizarDicioML();
+  renderizarCustosManual();
+  await popularSeletorMeses();
+  let d=new Date();
+  document.getElementById('mesFiltro').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════
+function mudarTab(id, el){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ══════════════════════════════════════
+//  DICTIONARY
+// ══════════════════════════════════════
+function salvarDicio(){
+  try{ localStorage.setItem('shopee_dre_v16_dicio',JSON.stringify(dicionarioSkus)); }catch(e){}
+  if(db){ db.doc('config/dicionario_shopee').set({skus:dicionarioSkus}).catch(e=>console.error('Erro ao salvar dicionário Shopee na nuvem',e)); }
+}
+
+// ── CUSTOS MANUAIS ──
+function salvarCustosManualNuvem(){
+  if(db){ db.doc('config/custos_manuais').set({custos:custosManual}).catch(e=>console.error('Erro ao salvar custos manuais na nuvem',e)); }
+}
+
+function salvarCustoManual(){
+  const fam=document.getElementById('custo-fam-input').value.trim().toUpperCase();
+  const val=parseFloat(document.getElementById('custo-val-input').value);
+  if(!fam||isNaN(val)||val<0){ alert('Preencha família e custo válido.'); return; }
+  custosManual[fam]=val;
+  try{ localStorage.setItem('shopee_dre_v16_custos',JSON.stringify(custosManual)); }catch(e){}
+  salvarCustosManualNuvem();
+  renderizarCustosManual();
+  document.getElementById('custo-fam-input').value='';
+  document.getElementById('custo-val-input').value='';
+}
+
+function removerCustoManual(fam){
+  delete custosManual[fam];
+  try{ localStorage.setItem('shopee_dre_v16_custos',JSON.stringify(custosManual)); }catch(e){}
+  salvarCustosManualNuvem();
+  renderizarCustosManual();
+}
+
+function limparCustosManual(){
+  if(confirm('Apagar todos os custos manuais?')){ custosManual={}; try{ localStorage.setItem('shopee_dre_v16_custos',JSON.stringify(custosManual)); }catch(e){} salvarCustosManualNuvem(); renderizarCustosManual(); }
+}
+
+function renderizarCustosManual(custosUsados){
+  // custosUsados = objeto opcional com fonte de cada custo (após processar o motor)
+  const tbody=document.getElementById('tbl-custos-manual');
+  if(!tbody) return;
+  // Montar lista completa: manuais + usados pelo motor
+  const todas={};
+  for(const [f,v] of Object.entries(custosManual)) todas[f]={val:v,fonte:'manual'};
+  if(custosUsados){
+    // custosUsados pode ser {FAM: número} vindo do motor
+    for(const [f,v] of Object.entries(custosUsados)){
+      const numVal = typeof v==='object' ? v.val : v;
+      // Só adiciona se não existe já como manual (manual não é sobrescrito pelo auto)
+      if(!todas[f]) todas[f]={val:numVal, fonte:'auto'};
+    }
+  }
+  if(Object.keys(todas).length===0){
+    tbody.innerHTML='<tr><td colspan="4" style="color:var(--g400);text-align:center;padding:16px;font-size:.8rem;">Nenhum custo cadastrado. Adicione as famílias acima.</td></tr>';
+    return;
+  }
+  let html='';
+  for(const [fam,d] of Object.entries(todas)){
+    const tag=d.val===0?'tag-zero':d.fonte==='auto'?'tag-auto':'tag-manual';
+    const label=d.val===0?'Sem custo':d.fonte==='auto'?'Auto (financeiro)':'Manual (você)';
+    html+=`<tr>
+      <td style="font-weight:700;font-family:var(--mono);">${fam}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;">R$ ${parseFloat(d.val||0).toFixed(2)}</td>
+      <td><span class="tag-fonte ${tag}">${label}</span></td>
+      <td><button class="btn-sm btn-del" onclick="removerCustoManual('${fam}')">× Remover</button></td>
+    </tr>`;
+  }
+  tbody.innerHTML=html;
+}
+
+function adicionarDicionario(){
+  const v=document.getElementById('skuInput').value.trim();
+  if(!v) return;
+  dicionarioSkus[v]={
+    anuncioPai: document.getElementById('skuPaiInput').value.trim()||'Sem Anúncio',
+    familia: document.getElementById('familiaInput').value.trim().toUpperCase()||'SEM FAMÍLIA',
+    kit: parseFloat(document.getElementById('kitInput').value)||1,
+    extraFamilia: document.getElementById('extraFamiliaInput').value.trim().toUpperCase(),
+    extraKit: parseFloat(document.getElementById('extraKitInput').value)||0
+  };
+  salvarDicio(); renderizarDicio();
+  document.getElementById('skuInput').value='';
+  document.getElementById('skuInput').focus();
+}
+
+function editarDicio(sku){
+  const d=dicionarioSkus[sku]; if(!d) return;
+  document.getElementById('skuInput').value=sku;
+  document.getElementById('skuPaiInput').value=d.anuncioPai;
+  document.getElementById('familiaInput').value=d.familia;
+  document.getElementById('kitInput').value=d.kit;
+  document.getElementById('extraFamiliaInput').value=d.extraFamilia||'';
+  document.getElementById('extraKitInput').value=d.extraKit||0;
+  document.getElementById('skuInput').focus();
+}
+
+function removerDicio(sku){ delete dicionarioSkus[sku]; salvarDicio(); renderizarDicio(); }
+function limparDicionario(){ if(confirm('Apagar todas as regras do dicionário?')){ dicionarioSkus={}; salvarDicio(); renderizarDicio(); } }
+
+// ── DICIONÁRIO ML (paralelo ao da Shopee) ──
+function salvarDicioML(){
+  try{ localStorage.setItem('ml_dre_v17_dicio',JSON.stringify(dicionarioSkusML)); }catch(e){}
+  if(db){ db.doc('config/dicionario_ml').set({skus:dicionarioSkusML}).catch(e=>console.error('Erro ao salvar dicionário ML na nuvem',e)); }
+}
+
+function adicionarDicionarioML(){
+  const v=document.getElementById('skuInputML').value.trim();
+  if(!v) return;
+  dicionarioSkusML[v]={
+    anuncioPai: document.getElementById('skuPaiInputML').value.trim()||'Sem Anúncio',
+    familia: document.getElementById('familiaInputML').value.trim().toUpperCase()||'SEM FAMÍLIA',
+    kit: parseFloat(document.getElementById('kitInputML').value)||1,
+    extraFamilia: document.getElementById('extraFamiliaInputML').value.trim().toUpperCase(),
+    extraKit: parseFloat(document.getElementById('extraKitInputML').value)||0
+  };
+  salvarDicioML(); renderizarDicioML();
+  document.getElementById('skuInputML').value='';
+  document.getElementById('skuInputML').focus();
+}
+
+function editarDicioML(sku){
+  const d=dicionarioSkusML[sku]; if(!d) return;
+  document.getElementById('skuInputML').value=sku;
+  document.getElementById('skuPaiInputML').value=d.anuncioPai;
+  document.getElementById('familiaInputML').value=d.familia;
+  document.getElementById('kitInputML').value=d.kit;
+  document.getElementById('extraFamiliaInputML').value=d.extraFamilia||'';
+  document.getElementById('extraKitInputML').value=d.extraKit||0;
+  document.getElementById('skuInputML').focus();
+}
+
+function removerDicioML(sku){ delete dicionarioSkusML[sku]; salvarDicioML(); renderizarDicioML(); }
+function limparDicionarioML(){ if(confirm('Apagar todas as regras do dicionário ML?')){ dicionarioSkusML={}; salvarDicioML(); renderizarDicioML(); } }
+
+function renderizarDicioML(){
+  const lista=document.getElementById('listaDicioML'); if(!lista) return;
+  lista.innerHTML='';
+  for(const [sku,d] of Object.entries(dicionarioSkusML)){
+    let bExtra = d.extraFamilia&&d.extraKit>0 ? `<span class="badge badge-extra">+${d.extraKit} ${d.extraFamilia}</span>` : '';
+    lista.innerHTML+=`<li class="dict-item">
+      <span>
+        <strong>${sku}</strong> <span class="badge">Kit:${d.kit}</span> ${bExtra}<br>
+        <small style="color:var(--g600)">${d.anuncioPai} → ${d.familia}</small>
+      </span>
+      <span>
+        <button class="btn-edt" onclick="editarDicioML('${sku.replace(/'/g,"\\'")}')">✏️</button>
+        <button class="btn-del" onclick="removerDicioML('${sku.replace(/'/g,"\\'")}')">×</button>
+      </span>
+    </li>`;
+  }
+  pesquisarDicioML();
+}
+
+function pesquisarDicioML(){
+  const f=document.getElementById('pesquisaDicioML').value.toUpperCase();
+  document.querySelectorAll('#listaDicioML .dict-item').forEach(el=>{
+    el.style.display=el.innerText.toUpperCase().includes(f)?'':'none';
+  });
+}
+
+// ── AUTO-MAP ML ──
+// Inferência de família a partir do título do item — usada tanto no Auto-Mapear ML
+// quanto como fallback automático quando o SKU ainda não está no dicionário.
+// Mantém a MESMA categorização usada na Shopee (CANETA e LAPIS são famílias distintas).
+function inferirFamiliaML(titulo){
+  const t=String(titulo||'').toUpperCase();
+  if(t.includes('TONICO')||t.includes('TÔNICO')) return 'TONICO';
+  if(t.includes('CANETA')) return 'CANETA';
+  if(t.includes('LAPIS')||t.includes('LÁPIS')) return 'LAPIS';
+  if(t.includes('SHAMPOO')) return 'SHAMPOO';
+  if(t.includes('NAVALHETE')) return 'NAVALHETE';
+  return 'SEM FAMÍLIA';
+}
+
+async function autoMapearML(){
+  const f=document.getElementById('arquivoMLConciliacao').files[0];
+  if(!f){ alert('Selecione o Relatório de Conciliação do Mercado Livre primeiro.'); return; }
+  const btn=document.getElementById('btnAutoMapML');
+  btn.textContent='A LER...'; btn.disabled=true;
+  try{
+    const tabela=await lerExcelComCabecalho(f, 3);
+    let novos=0;
+    tabela.forEach(linha=>{
+      if(String(linha['Tipo de operação']||'').trim()!=='Venda') return;
+      const v=String(linha['SKU']||'').trim();
+      if(!v||dicionarioSkusML[v]) return;
+      const familia=inferirFamiliaML(linha['Item']);
+      let extraFamilia='', extraKit=0;
+      if(v.toUpperCase().endsWith('NA')||v.toUpperCase().endsWith('-NA')){
+        extraFamilia='NAVALHETE'; extraKit=1;
+      }
+      // Sugere anúncio pai = próprio título (usuário pode editar depois pra casar c/ nome usado na Shopee)
+      dicionarioSkusML[v]={anuncioPai:linha['Item']||'Sem Anúncio', familia, kit:1, extraFamilia, extraKit};
+      novos++;
+    });
+    salvarDicioML(); renderizarDicioML();
+    alert(`Auto-mapeamento ML concluído! ${novos} novos SKUs adicionados. Revise o "Anúncio Pai" de cada um pra bater com o nome usado na Shopee, se quiser unificar no DRE por Anúncio.`);
+  } catch(e){ alert('Erro a ler o ficheiro.'); console.error(e); }
+  finally{ btn.textContent='🔮 Auto-Mapear SKUs do ML'; btn.disabled=false; }
+}
+
+function renderizarDicio(){
+  const lista=document.getElementById('listaDicio'); lista.innerHTML='';
+  for(const [sku,d] of Object.entries(dicionarioSkus)){
+    let bExtra = d.extraFamilia&&d.extraKit>0 ? `<span class="badge badge-extra">+${d.extraKit} ${d.extraFamilia}</span>` : '';
+    lista.innerHTML+=`<li class="dict-item">
+      <span>
+        <strong>${sku}</strong> <span class="badge">Kit:${d.kit}</span> ${bExtra}<br>
+        <small style="color:var(--g600)">${d.anuncioPai} → ${d.familia}</small>
+      </span>
+      <span>
+        <button class="btn-edt" onclick="editarDicio('${sku.replace(/'/g,"\\'")}')">✏️</button>
+        <button class="btn-del" onclick="removerDicio('${sku.replace(/'/g,"\\'")}')">×</button>
+      </span>
+    </li>`;
+  }
+  pesquisarDicio();
+}
+
+function pesquisarDicio(){
+  const f=document.getElementById('pesquisaDicio').value.toUpperCase();
+  document.querySelectorAll('.dict-item').forEach(el=>{
+    el.style.display=el.innerText.toUpperCase().includes(f)?'':'none';
+  });
+}
+
+// ══════════════════════════════════════
+//  AUTO-MAP
+// ══════════════════════════════════════
+async function autoMapearShopee(){
+  const f=document.getElementById('arquivoShopee').files[0];
+  if(!f){ alert('Selecione o Relatório SHOPEE primeiro.'); return; }
+  const btn=document.getElementById('btnAutoMap');
+  btn.textContent='A LER...'; btn.disabled=true;
+  try{
+    const tabela=await lerExcelObj(f);
+    let novos=0;
+    tabela.forEach(linha=>{
+      const v=(linha['Número de referência SKU']||'').trim();
+      if(!v||dicionarioSkus[v]) return;
+      const pai=linha['Nº de referência do SKU principal']||'Sem Anúncio';
+      const titulo=(linha['Nome do Produto']||'').toUpperCase();
+      const nomeVar=(linha['Nome da variação']||'').toUpperCase();
+      let familia='DESCONHECIDO';
+      if(titulo.includes('TONICO')||titulo.includes('TÔNICO')) familia='TONICO';
+      else if(titulo.includes('CANETA')) familia='CANETA';
+      else if(titulo.includes('LAPIS')||titulo.includes('LÁPIS')) familia='LAPIS';
+      else if(titulo.includes('SHAMPOO')) familia='SHAMPOO';
+      let kit=1;
+      // Detecta kit por vários padrões: '2 UNIDADES', '2 UN', '2 KITS', '2 SHAMPOOS', '3 LAPIS'
+      const m=nomeVar.match(/(\d+)\s*(UNIDADES?|UN|KITS?|PE[CÇ]AS?|SHAMPOOS?|L[AÁ]PIS)/i);
+      if(m) kit=parseInt(m[1]);
+      let extraFamilia='', extraKit=0;
+      if(v.toUpperCase().endsWith('NA')||v.toUpperCase().endsWith('-NA')){
+        extraFamilia='NAVALHETE'; extraKit=1;
+      }
+      dicionarioSkus[v]={anuncioPai:pai, familia, kit, extraFamilia, extraKit};
+      novos++;
+    });
+    salvarDicio(); renderizarDicio();
+    alert(`Auto-mapeamento concluído! ${novos} novos SKUs adicionados.`);
+  } catch(e){ alert('Erro a ler o ficheiro.'); console.error(e); }
+  finally{ btn.textContent='🔮 Auto-Mapear SKUs da Shopee'; btn.disabled=false; }
+}
+
+// ══════════════════════════════════════
+//  FILE READERS
+// ══════════════════════════════════════
+function lerExcelObj(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const d=new Uint8Array(e.target.result);
+        const wb=XLSX.read(d,{type:'array'});
+        res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}));
+      } catch(err){rej(err);}
+    };
+    r.onerror=rej; r.readAsArrayBuffer(file);
+  });
+}
+function lerExcelArr(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const d=new Uint8Array(e.target.result);
+        const wb=XLSX.read(d,{type:'array'});
+        res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}));
+      } catch(err){rej(err);}
+    };
+    r.onerror=rej; r.readAsArrayBuffer(file);
+  });
+}
+
+// Lê um Excel cujo cabeçalho real não está na linha 1 (caso dos relatórios do Mercado Livre,
+// que trazem linhas de aviso/título antes da tabela). headerRow é 1-indexado.
+function lerExcelComCabecalho(file, headerRow){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const d=new Uint8Array(e.target.result);
+        const wb=XLSX.read(d,{type:'array'});
+        const arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+        const headers=(arr[headerRow-1]||[]).map(h=>String(h).trim());
+        const linhas=arr.slice(headerRow).map(rowArr=>{
+          const obj={};
+          headers.forEach((h,i)=>{ if(h) obj[h]=rowArr[i]!==undefined?rowArr[i]:''; });
+          return obj;
+        }).filter(o=>Object.keys(o).length>0);
+        res(linhas);
+      } catch(err){rej(err);}
+    };
+    r.onerror=rej; r.readAsArrayBuffer(file);
+  });
+}
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+function fmt(v){ return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function pct(v,base){ return base===0?'—':(v/base*100).toFixed(1)+'%'; }
+
+function parseMoeda(s){
+  let str=String(s).replace('R$','').replace(/\s/g,'');
+  if(str.includes(',')&&str.includes('.')) str=str.replace(/\./g,'').replace(',','.');
+  else if(str.includes(',')) str=str.replace(',','.');
+  return parseFloat(str)||0;
+}
+
+function converterData(v){
+  if(!v) return '';
+  if(typeof v==='number'&&v>40000&&v<60000){
+    return new Date((v-25569)*86400*1000).toISOString().split('T')[0];
+  }
+  const s=String(v).trim();
+  if(s.match(/^\d{4}-\d{2}-\d{2}/)) return s.match(/^\d{4}-\d{2}-\d{2}/)[0];
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(m){
+    let ano=m[3]; if(ano.length===2) ano='20'+ano;
+    return `${ano}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  }
+  return '';
+}
+
+function extrairMktEspecifico(matriz){
+  if(!matriz) return {};
+  let res={}, iNome=-1, iCusto=-1;
+  matriz.forEach(linha=>{
+    if(!linha||!linha.length) return;
+    if(iNome===-1){
+      const s=linha.map(c=>String(c).toUpperCase().trim());
+      // Procura colunas de nome e custo NA MESMA LINHA (para não confundir com linhas de metadados)
+      const cNome=s.findIndex(c=>c==='NOME DO ANÚNCIO'||c==='NOME DO ANUNCIO'||(c.includes('ANÚNCIO')&&c.length<30)||c==='PRODUTO'||c.includes('PRODUCT_NAME')||c==='ITEM'||c==='SKU'||c.includes('NOME DO')||c.includes('_NAME_')||c.endsWith('_NAME'));
+      // Busca custo em PRIORIDADE: primeiro exato "DESPESAS/DESPESA", depois comissão, depois custo genérico
+      // Nunca pegar "CUSTO POR CONVERSÃO" (coluna de CPC, não gasto total)
+      let cCusto=s.indexOf('DESPESAS');
+      if(cCusto===-1) cCusto=s.indexOf('DESPESA');
+      if(cCusto===-1) cCusto=s.findIndex(c=>c.includes('COMISSÃO')&&!c.includes('CUSTO')&&!c.includes('TAXA'));
+      if(cCusto===-1) cCusto=s.findIndex(c=>c.includes('COMMISSION')&&!c.includes('COST'));
+      if(cCusto===-1) cCusto=s.findIndex(c=>c.includes('ESTIMADA'));
+      // Só define os índices se AMBAS as colunas forem encontradas na mesma linha
+      if(cNome!==-1&&cCusto!==-1){ iNome=cNome; iCusto=cCusto; }
+      return;
+    }
+    if(iNome<0||iCusto<0) return;
+    const nome=String(linha[iNome]).toUpperCase();
+    const val=Math.abs(parseMoeda(linha[iCusto]));
+    if(!nome||val===0) return;
+    let pai=nome;
+    for(const [sku,r] of Object.entries(dicionarioSkus)){
+      if(nome.includes(r.anuncioPai.toUpperCase())||nome.includes(sku.toUpperCase())){
+        pai=r.anuncioPai; break;
+      }
+    }
+    if(!res[pai]) res[pai]=0;
+    res[pai]+=val;
+  });
+  return res;
+}
+
+// ══════════════════════════════════════
+//  PROCESSAMENTO MERCADO LIVRE
+// ══════════════════════════════════════
+// Regra crítica (validada com dados reais): uma mesma venda pode aparecer em VÁRIAS linhas
+// na Conciliação (ex: uma linha com o item + outra só com a tarifa de frete que "estourou"
+// depois; ou várias linhas de cancelamento). Por isso agrupamos por "Número da operação",
+// somando Valor Bruto e Tarifas, mas pegando a Quantidade de apenas UMA linha do grupo
+// (nunca somando quantidade entre linhas do mesmo grupo).
+// Lê o bloco de texto "Detalhes de tarifas" (ex: "{Tarifa 1\nNome da tarifa: Custo por vender...")
+// e separa cada tarifa em duas categorias: COMISSÃO (custo por vender, custo por cobrar,
+// taxa de parcelamento) x FRETE (qualquer tarifa cujo nome contenha "envio").
+// Isso é o que permite mostrar a % de comissão real (~13-15%) separada do custo de frete.
+function categorizarTarifas(texto){
+  let comissao=0, frete=0;
+  const blocos=String(texto||'').split(/\{Tarifa \d+/).slice(1);
+  blocos.forEach(b=>{
+    const nomeM=b.match(/Nome da tarifa:\s*([^;]+);/);
+    const valM=b.match(/Valor líquido:\s*R\$\s*([\d.,]+);/);
+    if(!nomeM||!valM) return;
+    const nome=nomeM[1].trim();
+    const valor=parseMoeda(valM[1]);
+    if(/envio/i.test(nome)) frete+=valor; else comissao+=valor;
+  });
+  return {comissao, frete};
+}
+
+function processarML(mConc, mFat, mes){
+  let grupos={};
+  let tarifaIdsVistos=new Set();
+
+  (mConc||[]).forEach(linha=>{
+    if(String(linha['Tipo de operação']||'').trim()!=='Venda') return;
+    if(String(linha['Status da operação']||'').trim()!=='Pago') return;
+    const dataVenda=converterData(linha['Data da venda']);
+    if(!dataVenda.startsWith(mes)) return;
+
+    const numOp=String(linha['Número da operação']||'');
+    if(!numOp) return;
+
+    if(!grupos[numOp]){
+      grupos[numOp]={
+        numOp,
+        pacote:String(linha['Número do pacote']||''),
+        envio:String(linha['Número do envio']||''),
+        sku:String(linha['SKU']||'').trim()||'Sem SKU',
+        item:linha['Item']||'',
+        qtd:parseFloat(linha['Quantidade de itens'])||0,
+        fatBruto:0, comissao:0, freteReal:0, envioComprador:0, parcelamentoComprador:0, linhasAgrupadas:0
+      };
+    }
+    const g=grupos[numOp];
+    g.fatBruto+=parseMoeda(linha['Valor bruto (=)']);
+    // "Envio pago pelo comprador" e "Taxa de parcelamento paga pelo comprador" são atributos
+    // da VENDA, não de cada linha — se repetem idênticos em todas as linhas-split do mesmo
+    // grupo. Por isso pegamos o maior valor visto (não somamos), senão duplicam/triplicam
+    // junto com as linhas de tarifa.
+    const envioCompradorLinha=parseMoeda(linha['Envio pago pelo comprador (+)']);
+    if(envioCompradorLinha>g.envioComprador) g.envioComprador=envioCompradorLinha;
+    const parcelamentoCompradorLinha=parseMoeda(linha['Taxa de parcelamento paga pelo comprador (+)']);
+    if(parcelamentoCompradorLinha>g.parcelamentoComprador) g.parcelamentoComprador=parcelamentoCompradorLinha;
+    const {comissao, frete}=categorizarTarifas(linha['Detalhes de tarifas']);
+    g.comissao+=comissao;
+    g.freteReal+=frete;
+    g.linhasAgrupadas++;
+    // Se essa linha trouxer o item/sku "de verdade" (valor bruto > 0), garante que qtd/sku fiquem certos
+    if(parseMoeda(linha['Valor bruto (=)'])>0){
+      g.sku=String(linha['SKU']||g.sku).trim()||g.sku;
+      g.item=linha['Item']||g.item;
+      g.qtd=parseFloat(linha['Quantidade de itens'])||g.qtd;
+    }
+    // Guarda os IDs de tarifa já contabilizados aqui, pra não duplicar ao cruzar com o Faturamento
+    const detalhes=String(linha['Detalhes de tarifas']||'');
+    (detalhes.match(/ID da tarifa:\s*(\d+)/g)||[]).forEach(m=>{
+      tarifaIdsVistos.add(m.replace(/\D/g,''));
+    });
+  });
+
+  // Cruza com o Faturamento: captura tarifas (ex: frete extra/intermunicipal) que "vazam"
+  // pro relatório do mês seguinte e não apareceriam na Conciliação do mês da venda.
+  (mFat||[]).forEach(linha=>{
+    const numVenda=String(linha['Número da venda']||'');
+    if(!numVenda||!grupos[numVenda]) return; // só considera vendas já capturadas no mês certo
+    const idTarifa=String(linha['Número da tarifa']||'').split('.')[0];
+    if(idTarifa&&tarifaIdsVistos.has(idTarifa)) return; // já contabilizada, evita duplicar
+    const detalhe=String(linha['Detalhe']||'');
+    if(/cancelamento/i.test(detalhe)) return; // cancelamentos já tratados no filtro Status=Pago
+    const valor=parseMoeda(linha['Valor da tarifa']);
+    if(/envio/i.test(detalhe)) grupos[numVenda].freteReal+=valor;
+    else grupos[numVenda].comissao+=valor;
+    grupos[numVenda].linhasAgrupadas++;
+    if(idTarifa) tarifaIdsVistos.add(idTarifa);
+  });
+
+  // Compra simultânea (mesmo "Número do pacote" com mais de um SKU): o Mercado Livre costuma
+  // jogar a tarifa de frete inteira numa única linha, sem dividir entre os itens comprados
+  // juntos. Redistribuímos o frete PROPORCIONALMENTE ao faturamento bruto de cada SKU dentro
+  // do mesmo pacote, pra cada linha carregar sua parte justa do custo de envio.
+  let porPacote={};
+  Object.values(grupos).forEach(g=>{ if(g.pacote) (porPacote[g.pacote]=porPacote[g.pacote]||[]).push(g); });
+  Object.values(porPacote).forEach(irmaos=>{
+    if(irmaos.length<2) return;
+    const totalFrete=irmaos.reduce((s,x)=>s+x.freteReal,0);
+    const totalEnvioComprador=Math.max(...irmaos.map(x=>x.envioComprador));
+    const totalBruto=irmaos.reduce((s,x)=>s+x.fatBruto,0);
+    if(totalBruto<=0) return;
+    irmaos.forEach(x=>{
+      const proporcao=x.fatBruto/totalBruto;
+      x.freteReal=totalFrete*proporcao;
+      x.envioComprador=totalEnvioComprador*proporcao;
+    });
+  });
+
+  // Retira o frete pago pelo comprador e a taxa de parcelamento paga pelo comprador do
+  // "Faturamento Bruto" (são receita de passagem, não venda de produto) — SEMPRE, mesmo
+  // quando não existe tarifa de envio do ML pra abater (ex: self_service). O dinheiro que o
+  // comprador paga de frete nunca passa pela sua conta nesses casos — não é receita sua, mas
+  // também NÃO é um custo seu (você não paga nada por fora, é o comprador que paga direto).
+  // Por isso ele simplesmente SOME dos dois lados: sai do Faturamento Bruto e não vira uma
+  // tarifa/custo em lugar nenhum. Frete Líquido nunca é negativo (nunca vira crédito).
+  Object.values(grupos).forEach(g=>{
+    const descontoParcelamento=Math.min(g.parcelamentoComprador, Math.max(g.comissao,0));
+    g.fatBruto-=(g.envioComprador+descontoParcelamento);
+    g.freteReal=Math.max(0, g.freteReal-g.envioComprador);
+    g.comissao-=descontoParcelamento;
+    g.taxas=g.comissao+g.freteReal;
+  });
+
+  return Object.values(grupos);
+}
+
+function renderizarAuditoriaML(grupos){
+  const tbody=document.getElementById('tbl-auditoria-ml');
+  if(!tbody) return;
+  auditoriaML=grupos;
+  if(!grupos||grupos.length===0){
+    tbody.innerHTML='<tr><td colspan="10" class="empty">Sem vendas do Mercado Livre neste período.</td></tr>';
+    document.getElementById('audit-count').textContent='0 vendas';
+    return;
+  }
+  let html='';
+  grupos.forEach(g=>{
+    const liquido=g.fatBruto-g.taxas;
+    const colPacote = g.pacote
+      ? `<td class="mono">${g.pacote}</td>`
+      : `<td class="mono" style="color:var(--g400);">— <small title="Sem nº de pacote nesse tipo de envio; use o nº de operação (link Vendas) ou o nº do envio">nº envio: ${g.envio||'—'}</small></td>`;
+    html+=`<tr class="audit-linha" data-txt="${g.sku.toUpperCase()} ${g.pacote} ${g.envio}">
+      <td class="mono">${g.numOp}</td>
+      ${colPacote}
+      <td class="b">${g.sku}</td>
+      <td><small>${g.item}</small></td>
+      <td class="r mono">${g.qtd}</td>
+      <td class="r mono">${g.linhasAgrupadas}</td>
+      <td class="r mono">${fmt(g.fatBruto)}</td>
+      <td class="r red">-${fmt(g.comissao)}</td>
+      <td class="r red">${g.freteReal>=0?'-'+fmt(g.freteReal):'+'+fmt(Math.abs(g.freteReal))}</td>
+      <td class="r mono" style="font-weight:700;">${fmt(liquido)}</td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+  document.getElementById('audit-count').textContent=`${grupos.length} vendas agrupadas`;
+  document.getElementById('tab-auditoria-ml').innerHTML=`🔎 Auditoria ML <span class="tab-badge">${grupos.length}</span>`;
+}
+
+function filtrarAuditoriaML(){
+  const f=document.getElementById('srch-audit').value.toUpperCase();
+  document.querySelectorAll('.audit-linha').forEach(r=>{
+    r.style.display=r.dataset.txt.includes(f)?'':'none';
+  });
+}
+
+// ══════════════════════════════════════
+//  MAIN PROCESSING
+// ══════════════════════════════════════
+async function processarCruzamentoDeDados(){
+  const fFin=document.getElementById('arquivoFinancas').files[0];
+  const fShop=document.getElementById('arquivoShopee').files[0];
+  const fAds=document.getElementById('arquivoAds').files[0];
+  const fAfil=document.getElementById('arquivoAfiliados').files[0];
+  const fMLConc=document.getElementById('arquivoMLConciliacao').files[0];
+  const fMLFat=document.getElementById('arquivoMLFaturamento').files[0];
+  const mes=document.getElementById('mesFiltro').value;
+  if(!fFin||!fShop){ alert('Ficheiros Vendas e Financeiro são obrigatórios.'); return; }
+  if(!mes){ alert('Selecione o mês de referência.'); return; }
+  const btn=document.getElementById('btnCalcular');
+  btn.textContent='A LER FICHEIROS...'; btn.disabled=true;
+  try{
+    const promessas=[lerExcelArr(fFin),lerExcelObj(fShop)];
+    promessas.push(fAds?lerExcelArr(fAds):Promise.resolve(null));
+    promessas.push(fAfil?lerExcelArr(fAfil):Promise.resolve(null));
+    promessas.push(fMLConc?lerExcelComCabecalho(fMLConc,3):Promise.resolve(null));
+    promessas.push(fMLFat?lerExcelComCabecalho(fMLFat,8):Promise.resolve(null));
+    const [mFin,tShop,mAds,mAfil,mMLConc,mMLFat]=await Promise.all(promessas);
+    btn.textContent='A CALCULAR...';
+    const gruposML=mMLConc?processarML(mMLConc,mMLFat,mes):[];
+    renderizarAuditoriaML(gruposML);
+    executarMotor(mFin,tShop,mAds,mAfil,mes,gruposML);
+  } catch(e){ alert('Erro a processar ficheiros. Verifique os formatos.'); console.error(e); }
+  finally{ btn.textContent='⚡ CRUZAR DADOS E GERAR DRE'; btn.disabled=false; }
+}
+
+function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
+  // ── Extrair MKT específico ──
+  const adsEsp=extrairMktEspecifico(mAds);
+  const afilEsp=extrairMktEspecifico(mAfil);
+  let totalAds=0, totalAfil=0;
+  for(let k in adsEsp) totalAds+=adsEsp[k];
+  for(let k in afilEsp) totalAfil+=afilEsp[k];
+
+  // Faturamento bruto do Mercado Livre (já líquido de frete/parcelamento do comprador),
+  // usado só pra ratear Despesas Operacionais Gerais entre os dois canais — os gastos fixos
+  // do negócio (aluguel, sistema, funcionário etc.) são de todo o negócio, não só da Shopee.
+  const fatBrutoMLTotal=(gruposML||[]).reduce((s,g)=>s+g.fatBruto,0);
+
+  // ── Processar Financeiro ──
+  let despOp=0, mktGeral=0;
+  let historicoCompras=[];
+  let iDesc=-1,iData=-1,iTotal=-1,iQtd=-1;
+
+  mFin.forEach(linha=>{
+    if(!linha||!linha.length) return;
+    if(iDesc===-1){
+      const s=linha.map(c=>String(c).toUpperCase().trim());
+      iDesc=s.findIndex(c=>c==='DESCRIÇÃO'||c==='DESCRICAO');
+      iData=s.findIndex(c=>c==='DATA');
+      iTotal=s.findIndex(c=>c==='TOTAL');
+      iQtd=s.findIndex(c=>c==='UNIDADE'||c==='QTD');
+      return;
+    }
+    if(iDesc<0||iTotal<0) return;
+    const desc=String(linha[iDesc]).toUpperCase().trim();
+    const data=converterData(linha[iData]);
+    const valorBruto=parseMoeda(linha[iTotal]);
+    if(valorBruto>=0) return;
+    const valorGasto=Math.abs(valorBruto);
+    const qtd=iQtd>=0?(Math.abs(parseMoeda(linha[iQtd]))||1):1;
+    const noMes=data.startsWith(mes);
+
+    const ignorar=desc.includes('CANCELAD')||desc.includes('DISTRIBUIÇÃO')||desc.includes('LUCRO')||desc.includes('SOCIO')||desc.includes('SÓCIO')||desc.includes('DIZIMO')||desc.includes('RETIRADA')||desc.includes('TRANSFERENCIA')||desc.includes('TRANSFERÊNCIA');
+    if(ignorar) return;
+
+    const eMkt=desc.includes('ADS')||desc.includes('AFILIADO')||desc.includes('MARKETING');
+    const palEstoque=['CANETA','TONICO','TÔNICO','SHAMPOO','NAVALHETE','LÁPIS','LAPIS'];
+    const palFalso=['FRETE','AJUDANTE','ERRO','BRINDE','MOTO','UBER','TAXA','CAIXA','SACOLA','EMBALAGEM'];
+    const eEstoque=palEstoque.some(p=>desc.includes(p))&&!palFalso.some(p=>desc.includes(p));
+
+    if(noMes){
+      if(eMkt) mktGeral+=valorGasto;
+      else if(!eEstoque) despOp+=valorGasto;
+    }
+
+    if(eEstoque){
+      let fam='DESCONHECIDO';
+      if(desc.includes('CANETA')) fam='CANETA';
+      if(desc.includes('TONICO')||desc.includes('TÔNICO')) fam='TONICO';
+      if(desc.includes('SHAMPOO')) fam='SHAMPOO';
+      if(desc.includes('NAVALHETE')) fam='NAVALHETE';
+      if(desc.includes('LAPIS')||desc.includes('LÁPIS')) fam='LAPIS';
+      historicoCompras.push({familia:fam, data, custoUnitario:valorGasto/qtd});
+    }
+  });
+
+  // ── Custo por família ──
+  // Prioridade: 1º custos hardcoded padrão, 2º custos manuais do user, 3º compras do financeiro (mais recente vence)
+  let custoPorFamilia={SHAMPOO:3.50, NAVALHETE:3.62};
+  // Aplicar custos manuais como fallback
+  for(const [fam,val] of Object.entries(custosManual)){ custoPorFamilia[fam]=val; }
+  // Compras do financeiro sempre vencem (mais atual)
+  historicoCompras.sort((a,b)=>a.data.localeCompare(b.data));
+  historicoCompras.forEach(c=>{ if(c.data<=mes+'-31') custoPorFamilia[c.familia]=c.custoUnitario; });
+  // Atualizar tabela de custos da UI para mostrar quais estão em uso
+  // Atualizar UI de custos com o que foi efetivamente usado (fora do try-catch do arquivo)
+  setTimeout(()=>renderizarCustosManual(custoPorFamilia),0);
+
+  // ── Processar Vendas Shopee ──
+  let fatBrutoTotal=0, taxasTotal=0, cpvTotal=0;
+  let fatPorAnuncio={};
+  let dadosPorVar={};
+
+  tShop.forEach(linha=>{
+    if((linha['Status do pedido']||'').toUpperCase().includes('CANCELADO')) return;
+    const dataV=String(linha['Data de criação do pedido']||linha['Data']||'');
+    if(!dataV.includes(mes)) return;
+
+    const preco=Math.abs(parseMoeda(linha['Subtotal do produto']));
+    const t1=Math.abs(parseMoeda(linha['Taxa de comissão bruta']));
+    const t2=Math.abs(parseMoeda(linha['Taxa de serviço líquida']));
+    const taxas=t1+t2;
+    const qtd=Math.abs(parseMoeda(linha['Quantidade']))||1;
+    const sku=linha['Número de referência SKU']||'Sem SKU';
+    // Para SKUs não mapeados: tenta detectar família pelo nome do produto
+    // Evita que SKUs não mapeados sumam em "SEM FAMÍLIA" e distorçam os totais
+    let regras=dicionarioSkus[sku];
+    if(!regras){
+      const tituloDetect=String(linha['Nome do Produto']||'').toUpperCase();
+      const nomeVarDetect=String(linha['Nome da variação']||'').toUpperCase();
+      let familiaDetect='SEM FAMÍLIA';
+      if(tituloDetect.includes('TÔNICO')||tituloDetect.includes('TONICO')) familiaDetect='TONICO';
+      else if(tituloDetect.includes('CANETA')||tituloDetect.includes('LAPIS')||tituloDetect.includes('LÁPIS')) familiaDetect='CANETA';
+      else if(tituloDetect.includes('SHAMPOO')) familiaDetect='SHAMPOO';
+      // Detecta kit pelo nome da variação (mesma lógica do auto-map)
+      const mKit=nomeVarDetect.match(/(\d+)\s*(UNIDADES?|UN\b|KITS?|PE[CÇ]AS?|SHAMPOOS?|L[ÁA]PIS)/i);
+      const kitDetect=mKit?parseInt(mKit[1]):1;
+      // Detecta combo navalhete pelo sufixo NA
+      const eNa=sku.toUpperCase().endsWith('NA')||sku.toUpperCase().endsWith('-NA');
+      regras={anuncioPai:'Sem Anúncio', familia:familiaDetect, kit:kitDetect,
+              extraFamilia:eNa?'NAVALHETE':'', extraKit:eNa?1:0};
+    }
+
+    // Fix 3: Re-detectar kit pela variação da Shopee — corrige dicionário antigo com kit=1 errado
+    // Padrões: "2 UNIDADES", "2 UN", "2 KITS", "2 SHAMPOOS", "3 LAPIS", etc.
+    const nomeVarShopee=String(linha['Nome da variação']||'').toUpperCase();
+    const mkShopee=nomeVarShopee.match(/(\d+)\s*(UNIDADES?|UN\b|KITS?|PE[CÇ]AS?|SHAMPOOS?|L[ÁA]PIS)/i);
+    if(mkShopee){
+      const kitDetectado=parseInt(mkShopee[1]);
+      // Só corrige se o kit detectado for maior que o do dicionário (evita reduzir kits corretos)
+      if(kitDetectado>regras.kit) regras={...regras, kit:kitDetectado};
+    }
+
+    fatBrutoTotal+=preco;
+    taxasTotal+=taxas;
+    if(!fatPorAnuncio[regras.anuncioPai]) fatPorAnuncio[regras.anuncioPai]=0;
+    fatPorAnuncio[regras.anuncioPai]+=preco;
+
+    if(!dadosPorVar[sku]) dadosPorVar[sku]={qtd:0,fatBruto:0,taxas:0,regras};
+    dadosPorVar[sku].qtd+=qtd;
+    dadosPorVar[sku].fatBruto+=preco;
+    dadosPorVar[sku].taxas+=taxas;
+  });
+
+  if(fatBrutoTotal===0){ alert(`Sem vendas registadas em ${mes}.`); return; }
+
+  // ── Calcular DRE por variação e acumular por anúncio ──
+  let dreVarMap={};   // variação → DRE completo
+  let dreAncMap={};   // anuncioPai → DRE completo
+  let dreFamMap={};   // família → resumo
+
+  let lucroLiquido=0;
+
+  for(const [sku,d] of Object.entries(dadosPorVar)){
+    const {qtd,fatBruto,taxas,regras}=d;
+    const fatLiquido=fatBruto-taxas;
+    const pesoPai=fatPorAnuncio[regras.anuncioPai]||1;
+    const pesoProporcional=fatBruto/pesoPai;
+    const pesoLoja=fatBruto/fatBrutoTotal;
+
+    // Ads e Afiliados: distribuídos proporcionalmente por receita (pesoLoja)
+    // Garante que Empresa DRE sempre fecha matematicamente.
+    // adsEspPai/afilEspPai guardados apenas para exibição nos cards de anúncio.
+    const adsEspPai=adsEsp[regras.anuncioPai]||0;
+    const afilEspPai=afilEsp[regras.anuncioPai]||0;
+    const adsVar=totalAds*pesoLoja;
+    const afilVar=totalAfil*pesoLoja;
+    const mktGeralVar=mktGeral*pesoLoja;
+    // Despesas Operacionais Gerais são rateadas pelo faturamento COMBINADO (Shopee + ML) —
+    // é o único gasto que agora é compartilhado entre os dois canais.
+    const despOpVar=despOp*(fatBruto/(fatBrutoTotal+fatBrutoMLTotal));
+
+    // CPV
+    const custoBase=custoPorFamilia[regras.familia]||0;
+    const cpvMain=(custoBase*regras.kit)*qtd;
+    const custoExtraBase=custoPorFamilia[regras.extraFamilia]||0;
+    const cpvExtra=regras.extraFamilia&&regras.extraKit>0?(custoExtraBase*regras.extraKit)*qtd:0;
+    const cpvTotal_var=cpvMain+cpvExtra;
+
+    cpvTotal+=cpvTotal_var;
+
+    const lucroBruto=fatLiquido-cpvTotal_var;
+    const totalDesp=adsVar+afilVar+mktGeralVar+despOpVar;
+    const lucroVar=lucroBruto-totalDesp;
+    lucroLiquido+=lucroVar;
+
+    dreVarMap[sku]={
+      sku, regras, qtd,
+      fatBruto, taxas, fatLiquido,
+      cpv:cpvTotal_var, cpvMain, cpvExtra,
+      lucroBruto,
+      ads:adsVar, afil:afilVar, mktGeral:mktGeralVar, despOp:despOpVar,
+      totalDesp,
+      lucro:lucroVar,
+      custoBase, custoExtraBase,
+    };
+
+    // Acumular por anúncio
+    const pai=regras.anuncioPai;
+    if(!dreAncMap[pai]){
+      dreAncMap[pai]={
+        pai, fatBruto:0, taxas:0, fatLiquido:0,
+        cpv:0, lucroBruto:0,
+        ads:adsEspPai, afil:afilEspPai,
+        mktGeral:0, despOp:0, totalDesp:0,
+        lucro:0, variacoes:[], canais:new Set()
+      };
+    }
+    dreAncMap[pai].canais.add('Shopee');
+    dreAncMap[pai].fatBruto+=fatBruto;
+    dreAncMap[pai].taxas+=taxas;
+    dreAncMap[pai].fatLiquido+=fatLiquido;
+    dreAncMap[pai].cpv+=cpvTotal_var;
+    dreAncMap[pai].lucroBruto+=lucroBruto;
+    dreAncMap[pai].mktGeral+=mktGeralVar;
+    dreAncMap[pai].despOp+=despOpVar;
+    dreAncMap[pai].totalDesp+=(adsVar+afilVar+mktGeralVar+despOpVar);
+    dreAncMap[pai].lucro+=lucroVar;
+    dreAncMap[pai].variacoes.push(sku);
+
+    // Acumular por família
+    const fam=regras.familia;
+    if(!dreFamMap[fam]) dreFamMap[fam]={familia:fam,fisicos:0,fatBruto:0,taxas:0,custoMedio:custoBase,cpv:0,despOp:0,lucroBruto:0};
+    dreFamMap[fam].fisicos+=(qtd*regras.kit);
+    dreFamMap[fam].fatBruto+=fatBruto;
+    dreFamMap[fam].taxas+=taxas;
+    dreFamMap[fam].cpv+=cpvMain;
+    dreFamMap[fam].despOp+=despOpVar;
+    dreFamMap[fam].lucroBruto+=(fatBruto-taxas-cpvMain-despOpVar);
+    if(regras.extraFamilia&&regras.extraKit>0){
+      const fe=regras.extraFamilia;
+      if(!dreFamMap[fe]) dreFamMap[fe]={familia:fe,fisicos:0,fatBruto:0,taxas:0,custoMedio:custoExtraBase,cpv:0,lucroBruto:0};
+      dreFamMap[fe].fisicos+=(qtd*regras.extraKit);
+      dreFamMap[fe].cpv+=cpvExtra;
+      dreFamMap[fe].lucroBruto-=cpvExtra;
+    }
+  }
+
+  // ── Processar Mercado Livre (por família, com rateio de Despesas Operacionais Gerais —
+  //    mas ainda SEM Ads/Afiliados, que continuam exclusivos da Shopee por opção do usuário) ──
+  let dreFamMapML={};
+  let fatBrutoML=0, comissaoML=0, freteML=0, cpvTotalML=0, despOpML=0;
+  const denominadorCombinado=fatBrutoTotal+fatBrutoMLTotal;
+  (gruposML||[]).forEach(g=>{
+    // Se o SKU não estiver cadastrado no dicionário, infere a família automaticamente
+    // pelo nome do produto (mesma lógica do Auto-Mapear) em vez de jogar em "SEM FAMÍLIA".
+    const regras=dicionarioSkusML[g.sku]||{anuncioPai:g.item||'Sem Anúncio (ML)',familia:inferirFamiliaML(g.item),kit:1,extraFamilia:'',extraKit:0};
+    const custoBase=custoPorFamilia[regras.familia]||0;
+    const cpvMain=(custoBase*regras.kit)*g.qtd;
+    const custoExtraBase=custoPorFamilia[regras.extraFamilia]||0;
+    const cpvExtra=regras.extraFamilia&&regras.extraKit>0?(custoExtraBase*regras.extraKit)*g.qtd:0;
+    const taxasG=g.comissao+g.freteReal;
+    const despOpVarML=denominadorCombinado>0?despOp*(g.fatBruto/denominadorCombinado):0;
+
+    fatBrutoML+=g.fatBruto; comissaoML+=g.comissao; freteML+=g.freteReal; cpvTotalML+=(cpvMain+cpvExtra); despOpML+=despOpVarML;
+
+    const fam=regras.familia;
+    if(!dreFamMapML[fam]) dreFamMapML[fam]={familia:fam,fisicos:0,fatBruto:0,comissao:0,frete:0,taxas:0,custoMedio:custoBase,cpv:0,despOp:0,lucroBruto:0};
+    dreFamMapML[fam].fisicos+=(g.qtd*regras.kit);
+    dreFamMapML[fam].fatBruto+=g.fatBruto;
+    dreFamMapML[fam].comissao+=g.comissao;
+    dreFamMapML[fam].frete+=g.freteReal;
+    dreFamMapML[fam].taxas+=taxasG;
+    dreFamMapML[fam].cpv+=cpvMain;
+    dreFamMapML[fam].despOp+=despOpVarML;
+    dreFamMapML[fam].lucroBruto+=(g.fatBruto-taxasG-cpvMain-despOpVarML);
+    if(regras.extraFamilia&&regras.extraKit>0){
+      const fe=regras.extraFamilia;
+      if(!dreFamMapML[fe]) dreFamMapML[fe]={familia:fe,fisicos:0,fatBruto:0,comissao:0,frete:0,taxas:0,custoMedio:custoExtraBase,cpv:0,despOp:0,lucroBruto:0};
+      dreFamMapML[fe].fisicos+=(g.qtd*regras.extraKit);
+      dreFamMapML[fe].cpv+=cpvExtra;
+      dreFamMapML[fe].lucroBruto-=cpvExtra;
+    }
+  });
+  const taxasML=comissaoML+freteML;
+  const fatLiquidoML=fatBrutoML-taxasML;
+  const lucroBrutoML=fatLiquidoML-cpvTotalML-despOpML;
+
+  // ── DRE por SKU e por Anúncio Pai — Mercado Livre ──
+  // Agrega as vendas (que hoje estão por operação/venda) somando tudo por SKU ao longo do mês,
+  // no mesmo formato usado pela Shopee em dreVarMap/dreAncMap — assim entram nas mesmas telas
+  // de "DRE por Anúncio" e "DRE por SKU", e se o Anúncio Pai tiver o MESMO nome usado na
+  // Shopee, os dois canais aparecem somados num card só.
+  let dadosPorSkuML={};
+  (gruposML||[]).forEach(g=>{
+    if(!dadosPorSkuML[g.sku]) dadosPorSkuML[g.sku]={qtd:0,fatBruto:0,comissao:0,freteReal:0,item:g.item};
+    const d=dadosPorSkuML[g.sku];
+    d.qtd+=g.qtd; d.fatBruto+=g.fatBruto; d.comissao+=g.comissao; d.freteReal+=g.freteReal;
+  });
+
+  for(const [sku,d] of Object.entries(dadosPorSkuML)){
+    const regras=dicionarioSkusML[sku]||{anuncioPai:d.item||'Sem Anúncio (ML)',familia:inferirFamiliaML(d.item),kit:1,extraFamilia:'',extraKit:0};
+    const taxas=d.comissao+d.freteReal;
+    const fatLiquido=d.fatBruto-taxas;
+    const custoBase=custoPorFamilia[regras.familia]||0;
+    const cpvMain=(custoBase*regras.kit)*d.qtd;
+    const custoExtraBase=custoPorFamilia[regras.extraFamilia]||0;
+    const cpvExtra=regras.extraFamilia&&regras.extraKit>0?(custoExtraBase*regras.extraKit)*d.qtd:0;
+    const cpv=cpvMain+cpvExtra;
+    const lucroBruto=fatLiquido-cpv;
+    const despOpVar=denominadorCombinado>0?despOp*(d.fatBruto/denominadorCombinado):0;
+    const ads=0, afil=0, mktGeralVar=0; // ML ainda não coleta Ads/Afiliados/MKT Geral
+    const totalDesp=ads+afil+mktGeralVar+despOpVar;
+    const lucro=lucroBruto-totalDesp;
+
+    dreVarMap[sku]={
+      sku, regras, qtd:d.qtd,
+      fatBruto:d.fatBruto, taxas, fatLiquido,
+      cpv, cpvMain, cpvExtra,
+      lucroBruto,
+      ads, afil, mktGeral:mktGeralVar, despOp:despOpVar,
+      totalDesp, lucro,
+      custoBase, custoExtraBase,
+      canal:'ML',
+    };
+
+    const pai=regras.anuncioPai;
+    if(!dreAncMap[pai]){
+      dreAncMap[pai]={
+        variacoes:[], fatBruto:0, taxas:0, fatLiquido:0, cpv:0,
+        lucroBruto:0, ads:0, afil:0, mktGeral:0, despOp:0, totalDesp:0, lucro:0, canais:new Set(),
+      };
+    }
+    dreAncMap[pai].variacoes.push(sku);
+    dreAncMap[pai].fatBruto+=d.fatBruto;
+    dreAncMap[pai].taxas+=taxas;
+    dreAncMap[pai].fatLiquido+=fatLiquido;
+    dreAncMap[pai].cpv+=cpv;
+    dreAncMap[pai].lucroBruto+=lucroBruto;
+    dreAncMap[pai].despOp+=despOpVar;
+    dreAncMap[pai].totalDesp+=totalDesp;
+    dreAncMap[pai].lucro+=lucro;
+    dreAncMap[pai].canais.add('ML');
+  }
+
+  // ── Combinado (Shopee + ML) por família ──
+  let dreFamMapCombo={};
+  const todasFamilias=new Set([...Object.keys(dreFamMap), ...Object.keys(dreFamMapML)]);
+  todasFamilias.forEach(fam=>{
+    const s=dreFamMap[fam]||{fisicos:0,fatBruto:0,taxas:0,cpv:0,despOp:0,lucroBruto:0};
+    const m=dreFamMapML[fam]||{fisicos:0,fatBruto:0,taxas:0,cpv:0,despOp:0,lucroBruto:0};
+    dreFamMapCombo[fam]={
+      familia:fam,
+      fisicos:s.fisicos+m.fisicos,
+      fatBruto:s.fatBruto+m.fatBruto,
+      taxas:s.taxas+m.taxas,
+      cpv:s.cpv+m.cpv,
+      despOp:(s.despOp||0)+(m.despOp||0), // agora rateado nos dois canais
+      lucroBruto:s.lucroBruto+m.lucroBruto, // ambos já vêm líquidos de despesas operacionais
+    };
+  });
+
+  // ── Dados empresa ──
+  // A Despesa Operacional Geral é rateada pelo faturamento COMBINADO (Shopee+ML) — por isso,
+  // pro resumo/demonstrativo só-Shopee, usamos a fatia que sobra pra Shopee (não o valor bruto
+  // total do arquivo Financeiro, que incluiria também a parte que já foi pro ML).
+  const despOpShopee=denominadorCombinado>0?despOp*(fatBrutoTotal/denominadorCombinado):despOp;
+  const fatLiquidoTotal=fatBrutoTotal-taxasTotal;
+  const lucroBrutoTotal=fatLiquidoTotal-cpvTotal;
+  const totalDespesasTotal=mktGeral+totalAds+totalAfil+despOpShopee;
+
+  dreData={
+    mes,
+    empresa:{
+      fatBruto:fatBrutoTotal, taxas:taxasTotal, fatLiquido:fatLiquidoTotal,
+      cpv:cpvTotal, lucroBruto:lucroBrutoTotal,
+      ads:totalAds, afil:totalAfil, mktGeral, despOp:despOpShopee,
+      totalDesp:totalDespesasTotal,
+      lucroLiquido,
+    },
+    empresaML:{
+      fatBruto:fatBrutoML, taxas:taxasML, fatLiquido:fatLiquidoML,
+      cpv:cpvTotalML, despOp:despOpML, lucroBruto:lucroBrutoML,
+    },
+    anuncios:dreAncMap,
+    variacoes:dreVarMap,
+    familias:dreFamMap,
+    familiasML:dreFamMapML,
+    familiasCombo:dreFamMapCombo,
+  };
+
+  // ── Gravar o mês na nuvem (se disponível) — quem abrir o link depois carrega
+  // este mês pronto pelo seletor, sem precisar re-upload dos ficheiros ──
+  if(db){
+    db.doc('meses/'+mes).set({
+      dreData: limparParaJSON(dreData),
+      auditoriaML: limparParaJSON(auditoriaML),
+      geradoEm: new Date().toISOString(),
+    }).then(()=>popularSeletorMeses())
+      .catch(e=>{ console.error('Erro ao salvar mês na nuvem',e); alert('O DRE foi calculado, mas não foi possível salvar na nuvem (dados grandes demais ou conexão instável). Ele continua visível aqui, mas só nesta sessão.'); });
+  }
+
+  // ── Renderizar tudo ──
+  renderizarDREEmpresa();
+  renderizarDREAnuncios();
+  renderizarDRESKUs();
+  renderizarTabelas();
+
+  // Atualizar status e badges
+  const p=mes.split('-'); const nomeMes=new Date(+p[0],+p[1]-1,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  document.getElementById('status-bar').innerHTML=`Período: <strong>${nomeMes.toUpperCase()}</strong> &nbsp;|&nbsp; ${Object.keys(dreVarMap).length} SKUs &nbsp;|&nbsp; ${Object.keys(dreAncMap).length} Anúncios &nbsp;|&nbsp; Faturamento: <strong>${fmt(fatBrutoTotal)}</strong>`;
+  document.getElementById('tab-anuncio').innerHTML=`🏷️ DRE por Anúncio <span class="tab-badge">${Object.keys(dreAncMap).length}</span>`;
+  document.getElementById('tab-sku').innerHTML=`📦 DRE por SKU <span class="tab-badge">${Object.keys(dreVarMap).length}</span>`;
+
+  mudarTab('dre-empresa', document.querySelector('.tab'));
+  document.querySelectorAll('.tab')[1].classList.add('active');
+  document.querySelector('.tab.active:not(:nth-child(2))').classList.remove('active');
+}
+
+// ══════════════════════════════════════
+//  RENDER: DRE EMPRESA
+// ══════════════════════════════════════
+function renderizarDREEmpresa(){
+  if(!dreData) return;
+  const e=dreData.empresa;
+  const base=e.fatLiquido||1;
+
+  // KPIs
+  document.getElementById('kpi-bruta').textContent=fmt(e.fatBruto);
+  document.getElementById('kpi-taxas').textContent='-'+fmt(e.taxas);
+  document.getElementById('kpi-liquida').textContent=fmt(e.fatLiquido);
+  document.getElementById('kpi-cpv').textContent='-'+fmt(e.cpv);
+  document.getElementById('kpi-lbruto').textContent=fmt(e.lucroBruto);
+  document.getElementById('kpi-desp').textContent='-'+fmt(e.totalDesp);
+  const llEl=document.getElementById('kpi-ll');
+  llEl.textContent=fmt(e.lucroLiquido);
+  llEl.className='kpi-val '+(e.lucroLiquido>=0?'green':'red');
+  document.getElementById('kpi-margem').textContent=pct(e.lucroLiquido,e.fatBruto);
+
+  // DRE Statement
+  const stmt=document.getElementById('dre-empresa-stmt');
+  const mb=e.fatBruto;
+
+  function row(sinal,lbl,val,cls,indent,pctVal){
+    const sp=sinal==='+'?'<span class="sgn p">+</span>':sinal==='-'?'<span class="sgn m">-</span>':'<span class="sgn e">=</span>';
+    const ic=indent?`i${indent}`:'';
+    const pctStr=pctVal!==undefined?`<span class="dre-pct">${pct(pctVal,mb)}</span>`:
+                                     `<span class="dre-pct"></span>`;
+    return `<div class="dre-row ${ic}">
+      <div class="dre-lbl">${sp} ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div>${pctStr}</div>
+    </div>`;
+  }
+  function subrow(lbl,val,cls){
+    return `<div class="dre-row sub">
+      <div class="dre-lbl"><span class="sgn e">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function totrow(lbl,val){
+    const cls=val>=0?'green':'red';
+    return `<div class="dre-row tot">
+      <div class="dre-lbl"><span class="sgn e" style="color:var(--shopee)">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls}">${fmt(val)}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+
+  stmt.innerHTML=`
+    <div class="dre-section-hdr">▌ RECEITA</div>
+    ${row('+','Receita Bruta de Vendas',e.fatBruto,'',0,e.fatBruto)}
+    ${row('-','Taxas e Comissões da Plataforma (Shopee)',e.taxas,'red',1,e.taxas)}
+    <hr class="dre-hr">
+    ${subrow('RECEITA LÍQUIDA',e.fatLiquido,'green',e.fatLiquido)}
+
+    <div class="dre-section-hdr">▌ CUSTO DOS PRODUTOS VENDIDOS</div>
+    ${row('-','CPV — Custo dos Produtos Vendidos (Stock Físico)',e.cpv,'red',1,e.cpv)}
+    <hr class="dre-hr">
+    ${subrow('LUCRO BRUTO',e.lucroBruto,e.lucroBruto>=0?'green':'red')}
+
+    <div class="dre-section-hdr">▌ DESPESAS OPERACIONAIS</div>
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">MARKETING</div>
+    ${row('-','Shopee Ads (direto)',e.ads,'red',2,e.ads)}
+    ${row('-','Afiliados (direto)',e.afil,'red',2,e.afil)}
+    ${row('-','Marketing Geral (ficheiro financeiro)',e.mktGeral,'red',2,e.mktGeral)}
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">ADMINISTRATIVO</div>
+    ${row('-','Despesas Operacionais Gerais',e.despOp,'red',2,e.despOp)}
+    <hr class="dre-hr">
+    ${subrow('TOTAL DESPESAS OPERACIONAIS',e.totalDesp,'red')}
+
+    <div class="dre-section-hdr">▌ RESULTADO</div>
+    ${totrow('LUCRO LÍQUIDO DO EXERCÍCIO',e.lucroLiquido)}
+  `;
+
+  renderizarDREEmpresaML();
+  renderizarDREEmpresaCombo();
+}
+
+function renderizarDREEmpresaML(){
+  const em=dreData.empresaML||{fatBruto:0,taxas:0,fatLiquido:0,cpv:0,despOp:0,lucroBruto:0};
+  const mb=em.fatBruto||1;
+
+  document.getElementById('kpiml-bruta').textContent=fmt(em.fatBruto);
+  document.getElementById('kpiml-taxas').textContent='-'+fmt(em.taxas);
+  document.getElementById('kpiml-liquida').textContent=fmt(em.fatLiquido);
+  document.getElementById('kpiml-cpv').textContent='-'+fmt(em.cpv);
+  document.getElementById('kpiml-lbruto').textContent=fmt(em.fatLiquido-em.cpv);
+  document.getElementById('kpiml-desp').textContent='-'+fmt(em.despOp);
+  const llEl=document.getElementById('kpiml-ll');
+  llEl.textContent=fmt(em.lucroBruto);
+  llEl.className='kpi-val '+(em.lucroBruto>=0?'green':'red');
+  document.getElementById('kpiml-margem').textContent=pct(em.lucroBruto,em.fatBruto);
+
+  const stmt=document.getElementById('dre-ml-stmt');
+  function row(sinal,lbl,val,cls,indent){
+    const sp=sinal==='+'?'<span class="sgn p">+</span>':sinal==='-'?'<span class="sgn m">-</span>':'<span class="sgn e">=</span>';
+    const ic=indent?`i${indent}`:'';
+    return `<div class="dre-row ${ic}">
+      <div class="dre-lbl">${sp} ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function subrow(lbl,val,cls){
+    return `<div class="dre-row sub">
+      <div class="dre-lbl"><span class="sgn e">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function totrow(lbl,val){
+    const cls=val>=0?'green':'red';
+    return `<div class="dre-row tot">
+      <div class="dre-lbl"><span class="sgn e" style="color:var(--shopee)">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls}">${fmt(val)}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+
+  stmt.innerHTML=`
+    <div class="dre-section-hdr">▌ RECEITA</div>
+    ${row('+','Receita Bruta de Vendas (ML)',em.fatBruto,'',0)}
+    ${row('-','Taxas ML (Comissão + Frete Líquido)',em.taxas,'red',1)}
+    <hr class="dre-hr">
+    ${subrow('RECEITA LÍQUIDA',em.fatLiquido,'green')}
+
+    <div class="dre-section-hdr">▌ CUSTO DOS PRODUTOS VENDIDOS</div>
+    ${row('-','CPV — Custo dos Produtos Vendidos (Stock Físico)',em.cpv,'red',1)}
+    <hr class="dre-hr">
+    ${subrow('LUCRO BRUTO (antes de Desp. Operacionais)', em.fatLiquido-em.cpv, (em.fatLiquido-em.cpv)>=0?'green':'red')}
+
+    <div class="dre-section-hdr">▌ DESPESAS OPERACIONAIS</div>
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">ADMINISTRATIVO</div>
+    ${row('-','Despesas Operacionais Gerais (rateada)',em.despOp,'red',2)}
+    <hr class="dre-hr">
+
+    <div class="dre-section-hdr">▌ RESULTADO</div>
+    ${totrow('LUCRO LÍQUIDO ML DO EXERCÍCIO',em.lucroBruto)}
+  `;
+}
+
+function renderizarDREEmpresaCombo(){
+  const e=dreData.empresa;
+  const em=dreData.empresaML||{fatBruto:0,taxas:0,fatLiquido:0,cpv:0,despOp:0,lucroBruto:0};
+  const c={
+    fatBruto:e.fatBruto+em.fatBruto,
+    taxas:e.taxas+em.taxas,
+    fatLiquido:e.fatLiquido+em.fatLiquido,
+    cpv:e.cpv+em.cpv,
+    ads:e.ads, afil:e.afil, mktGeral:e.mktGeral, // só existem na Shopee
+    despOp:e.despOp+em.despOp,
+  };
+  c.lucroBruto=c.fatLiquido-c.cpv;
+  c.totalDesp=c.ads+c.afil+c.mktGeral+c.despOp;
+  c.lucroLiquido=c.lucroBruto-c.totalDesp;
+  const mb=c.fatBruto||1;
+
+  document.getElementById('kpicombo-bruta').textContent=fmt(c.fatBruto);
+  document.getElementById('kpicombo-taxas').textContent='-'+fmt(c.taxas);
+  document.getElementById('kpicombo-liquida').textContent=fmt(c.fatLiquido);
+  document.getElementById('kpicombo-cpv').textContent='-'+fmt(c.cpv);
+  document.getElementById('kpicombo-lbruto').textContent=fmt(c.lucroBruto);
+  document.getElementById('kpicombo-desp').textContent='-'+fmt(c.totalDesp);
+  const llEl=document.getElementById('kpicombo-ll');
+  llEl.textContent=fmt(c.lucroLiquido);
+  llEl.className='kpi-val '+(c.lucroLiquido>=0?'green':'red');
+  document.getElementById('kpicombo-margem').textContent=pct(c.lucroLiquido,c.fatBruto);
+
+  const stmt=document.getElementById('dre-combo-stmt');
+  function row(sinal,lbl,val,cls,indent){
+    const sp=sinal==='+'?'<span class="sgn p">+</span>':sinal==='-'?'<span class="sgn m">-</span>':'<span class="sgn e">=</span>';
+    const ic=indent?`i${indent}`:'';
+    return `<div class="dre-row ${ic}">
+      <div class="dre-lbl">${sp} ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function subrow(lbl,val,cls){
+    return `<div class="dre-row sub">
+      <div class="dre-lbl"><span class="sgn e">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function totrow(lbl,val){
+    const cls=val>=0?'green':'red';
+    return `<div class="dre-row tot">
+      <div class="dre-lbl"><span class="sgn e" style="color:var(--shopee)">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls}">${fmt(val)}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+
+  stmt.innerHTML=`
+    <div class="dre-section-hdr">▌ RECEITA</div>
+    ${row('+','Receita Bruta de Vendas (Shopee + ML)',c.fatBruto,'',0)}
+    ${row('-','Taxas e Comissões das Plataformas',c.taxas,'red',1)}
+    <hr class="dre-hr">
+    ${subrow('RECEITA LÍQUIDA',c.fatLiquido,'green')}
+
+    <div class="dre-section-hdr">▌ CUSTO DOS PRODUTOS VENDIDOS</div>
+    ${row('-','CPV — Custo dos Produtos Vendidos (Stock Físico)',c.cpv,'red',1)}
+    <hr class="dre-hr">
+    ${subrow('LUCRO BRUTO',c.lucroBruto,c.lucroBruto>=0?'green':'red')}
+
+    <div class="dre-section-hdr">▌ DESPESAS OPERACIONAIS</div>
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">MARKETING (SÓ SHOPEE)</div>
+    ${row('-','Shopee Ads (direto)',c.ads,'red',2)}
+    ${row('-','Afiliados (direto)',c.afil,'red',2)}
+    ${row('-','Marketing Geral (ficheiro financeiro)',c.mktGeral,'red',2)}
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">ADMINISTRATIVO (SHOPEE + ML)</div>
+    ${row('-','Despesas Operacionais Gerais (rateada nos 2 canais)',c.despOp,'red',2)}
+    <hr class="dre-hr">
+    ${subrow('TOTAL DESPESAS OPERACIONAIS',c.totalDesp,'red')}
+
+    <div class="dre-section-hdr">▌ RESULTADO</div>
+    ${totrow('LUCRO LÍQUIDO DO EXERCÍCIO (NEGÓCIO INTEIRO)',c.lucroLiquido)}
+  `;
+}
+
+// ══════════════════════════════════════
+//  RENDER: DRE POR ANÚNCIO
+// ══════════════════════════════════════
+function renderizarDREAnuncios(){
+  if(!dreData) return;
+  const grid=document.getElementById('anuncio-grid');
+  grid.innerHTML='';
+  for(const [pai,d] of Object.entries(dreData.anuncios)){
+    const margem=d.fatBruto>0?(d.lucro/d.fatBruto*100):0;
+    const barColor=d.lucro>=0?'var(--green)':'var(--red)';
+    const barW=Math.min(Math.abs(margem),100);
+    const canaisArr=d.canais?[...d.canais]:['Shopee'];
+    const badgesCanal=canaisArr.map(c=>`<span class="badge" style="background:${c==='ML'?'#fff3e0':'#e3f2fd'};color:${c==='ML'?'#e65100':'#1565c0'};">${c}</span>`).join(' ');
+    grid.innerHTML+=`
+    <div class="a-card" data-nome="${pai.toUpperCase()}">
+      <div class="a-card-hdr">
+        <h3>${pai} ${badgesCanal}</h3>
+        <small>${d.variacoes.length} variação(ões) — ${d.variacoes.slice(0,2).join(', ')}${d.variacoes.length>2?'...':''}</small>
+      </div>
+      <div class="a-card-body">
+        <div class="dm-row"><span class="dm-lbl">(+) Receita Bruta</span><span class="dm-val">${fmt(d.fatBruto)}</span></div>
+        <div class="dm-row"><span class="dm-lbl">(–) Taxas Plataforma</span><span class="dm-val red">-${fmt(d.taxas)}</span></div>
+        <div class="dm-row sub"><span class="dm-lbl">(=) Receita Líquida</span><span class="dm-val">${fmt(d.fatLiquido)}</span></div>
+        <div class="dm-row"><span class="dm-lbl">(–) CPV Produto</span><span class="dm-val red">-${fmt(d.cpv)}</span></div>
+        <div class="dm-row sub"><span class="dm-lbl">(=) Lucro Bruto</span><span class="dm-val ${d.lucroBruto>=0?'green':'red'}">${fmt(d.lucroBruto)}</span></div>
+        <div class="dm-row"><span class="dm-lbl">(–) Ads Diretos</span><span class="dm-val red">-${fmt(d.ads)}</span></div>
+        <div class="dm-row"><span class="dm-lbl">(–) Afiliados Diretos</span><span class="dm-val red">-${fmt(d.afil)}</span></div>
+        <div class="dm-row"><span class="dm-lbl">(–) MKT Geral (rateado)</span><span class="dm-val red">-${fmt(d.mktGeral)}</span></div>
+        <div class="dm-row"><span class="dm-lbl">(–) Desp. Op. (rateado)</span><span class="dm-val red">-${fmt(d.despOp)}</span></div>
+        <div class="dm-row tot"><span class="dm-lbl">(=) LUCRO LÍQUIDO</span><span class="dm-val ${d.lucro>=0?'green':'red'}">${fmt(d.lucro)}</span></div>
+        <div class="a-bar"><div class="a-bar-fill" style="width:${barW}%;background:${barColor};"></div></div>
+        <div class="a-bar-lbl">Margem: ${margem.toFixed(1)}%</div>
+      </div>
+    </div>`;
+  }
+}
+
+function filtrarAnuncios(){
+  const f=document.getElementById('srch-anuncio').value.toUpperCase();
+  document.querySelectorAll('.a-card').forEach(c=>{
+    c.style.display=c.dataset.nome.includes(f)?'':'none';
+  });
+}
+
+// ══════════════════════════════════════
+//  RENDER: DRE POR SKU
+// ══════════════════════════════════════
+function renderizarDRESKUs(){
+  if(!dreData) return;
+  const wrap=document.getElementById('sku-cards');
+  wrap.innerHTML='';
+  const vars=Object.entries(dreData.variacoes);
+  document.getElementById('sku-count').textContent=`${vars.length} SKUs`;
+
+  vars.sort((a,b)=>b[1].lucro-a[1].lucro);
+
+  vars.forEach(([sku,d])=>{
+    const lucroClass=d.lucro>=0?'lpos':'lneg';
+    const lucroUn=d.qtd>0?d.lucro/d.qtd:0;
+    const margem=d.fatBruto>0?(d.lucro/d.fatBruto*100):0;
+    const extraStr=d.regras.extraFamilia&&d.regras.extraKit>0?`<span class="badge badge-extra">+${d.regras.extraKit} ${d.regras.extraFamilia}</span>`:'';
+    const canalBadge=d.canal==='ML'?`<span class="badge" style="background:#fff3e0;color:#e65100;">ML</span>`:`<span class="badge" style="background:#e3f2fd;color:#1565c0;">Shopee</span>`;
+    wrap.innerHTML+=`
+    <div class="sku-card ${lucroClass}" data-sku="${sku.toUpperCase()} ${d.regras.anuncioPai.toUpperCase()} ${d.regras.familia.toUpperCase()}">
+      <div class="sku-hdr" onclick="toggleSKU(this)">
+        <div>
+          <div class="sku-code">${sku} ${canalBadge} ${extraStr}</div>
+          <div class="sku-parent">Anúncio: ${d.regras.anuncioPai} &nbsp;|&nbsp; Família: ${d.regras.familia} &nbsp;|&nbsp; Kit: ${d.regras.kit}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="sku-right">
+            <div class="sku-units">${d.qtd} unidades vendidas</div>
+            <div class="sku-lucro ${d.lucro>=0?'pos':'neg'}">${fmt(d.lucro)} <span style="font-size:.7rem;font-weight:400;">(${margem.toFixed(1)}%)</span></div>
+          </div>
+          <span class="sku-chev">▼</span>
+        </div>
+      </div>
+      <div class="sku-body">
+        <!-- POR UNIDADE -->
+        <div class="sku-col">
+          <div class="sku-col-title">DRE por Unidade</div>
+          <div class="sm-row"><span class="sm-lbl">(+) Receita Bruta/un</span><span class="sm-val">${fmt(d.fatBruto/d.qtd)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Taxas/un</span><span class="sm-val red">-${fmt(d.taxas/d.qtd)}</span></div>
+          <div class="sm-row sub"><span class="sm-lbl">(=) Receita Líq./un</span><span class="sm-val">${fmt(d.fatLiquido/d.qtd)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) CPV/un</span><span class="sm-val red">-${fmt(d.cpv/d.qtd)}</span></div>
+          <div class="sm-row sub"><span class="sm-lbl">(=) Lucro Bruto/un</span><span class="sm-val ${d.lucroBruto>=0?'green':'red'}">${fmt(d.lucroBruto/d.qtd)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Ads/un</span><span class="sm-val red">-${fmt(d.ads/d.qtd)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Afiliados/un</span><span class="sm-val red">-${fmt(d.afil/d.qtd)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) MKT Geral/un</span><span class="sm-val red">-${fmt(d.mktGeral/d.qtd)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Desp. Op./un</span><span class="sm-val red">-${fmt(d.despOp/d.qtd)}</span></div>
+          <div class="sm-row tot"><span class="sm-lbl">(=) LUCRO/un</span><span class="sm-val ${lucroUn>=0?'green':'red'}">${fmt(lucroUn)}</span></div>
+        </div>
+        <!-- TOTAIS + MÉTRICAS -->
+        <div class="sku-col">
+          <div class="sku-col-title">DRE Total (${d.qtd} und)</div>
+          <div class="sm-row"><span class="sm-lbl">(+) Fat. Bruto Total</span><span class="sm-val">${fmt(d.fatBruto)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Taxas Total</span><span class="sm-val red">-${fmt(d.taxas)}</span></div>
+          <div class="sm-row sub"><span class="sm-lbl">(=) Fat. Líquido Total</span><span class="sm-val">${fmt(d.fatLiquido)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) CPV Total</span><span class="sm-val red">-${fmt(d.cpv)}</span></div>
+          <div class="sm-row sub"><span class="sm-lbl">(=) Lucro Bruto Total</span><span class="sm-val ${d.lucroBruto>=0?'green':'red'}">${fmt(d.lucroBruto)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Ads Total</span><span class="sm-val red">-${fmt(d.ads)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Afiliados Total</span><span class="sm-val red">-${fmt(d.afil)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) MKT Geral Total</span><span class="sm-val red">-${fmt(d.mktGeral)}</span></div>
+          <div class="sm-row"><span class="sm-lbl">(–) Desp. Op. Total</span><span class="sm-val red">-${fmt(d.despOp)}</span></div>
+          <div class="sm-row tot"><span class="sm-lbl">(=) LUCRO TOTAL</span><span class="sm-val ${d.lucro>=0?'green':'red'}">${fmt(d.lucro)}</span></div>
+          <div style="margin-top:10px;" class="sku-metrics">
+            <div class="sku-met">
+              <div class="sku-met-lbl">Margem Líquida</div>
+              <div class="sku-met-val ${margem>=0?'green':'red'}">${margem.toFixed(2)}%</div>
+            </div>
+            <div class="sku-met">
+              <div class="sku-met-lbl">Custo Produto/un (${d.regras.familia})</div>
+              <div class="sku-met-val">R$ ${d.custoBase.toFixed(2)} × ${d.regras.kit}</div>
+            </div>
+            ${d.regras.extraFamilia&&d.regras.extraKit>0?`<div class="sku-met">
+              <div class="sku-met-lbl">Extra: ${d.regras.extraFamilia}/un</div>
+              <div class="sku-met-val">R$ ${d.custoExtraBase.toFixed(2)} × ${d.regras.extraKit}</div>
+            </div>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+}
+
+function toggleSKU(hdr){
+  const body=hdr.nextElementSibling;
+  const chev=hdr.querySelector('.sku-chev');
+  const open=body.classList.toggle('open');
+  chev.classList.toggle('open',open);
+}
+
+function filtrarSKUs(){
+  const f=document.getElementById('srch-sku').value.toUpperCase();
+  document.querySelectorAll('.sku-card').forEach(c=>{
+    c.style.display=c.dataset.sku.includes(f)?'':'none';
+  });
+}
+
+// ══════════════════════════════════════
+//  RENDER: TABELAS
+// ══════════════════════════════════════
+function renderizarTabelas(){
+  if(!dreData) return;
+
+  // Tabela famílias
+  let htmlFam='';
+  for(const f of Object.values(dreData.familias)){
+    const fatLiqFam=f.fatBruto-f.taxas;
+    htmlFam+=`<tr>
+      <td class="b">${f.familia}</td>
+      <td class="r mono" style="color:var(--shopee);font-weight:700;">${f.fisicos} und</td>
+      <td class="r mono">${f.fatBruto>0?fmt(f.fatBruto):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r red">${f.taxas>0?'-'+fmt(f.taxas):'—'}</td>
+      <td class="r mono">${fatLiqFam>0?fmt(fatLiqFam):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r mono">${fmt(f.custoMedio)}/un</td>
+      <td class="r red">-${fmt(f.cpv)}</td>
+      <td class="r red">${f.despOp>0?'-'+fmt(f.despOp):'—'}</td>
+      <td class="r ${f.lucroBruto>=0?'green':'red'}" style="font-weight:700;">${fmt(f.lucroBruto)}</td>
+    </tr>`;
+  }
+  document.getElementById('tbl-familias').innerHTML=htmlFam||'<tr><td colspan="9" class="empty">Sem dados</td></tr>';
+
+  // Tabela famílias — MERCADO LIVRE
+  let htmlFamML='';
+  for(const f of Object.values(dreData.familiasML||{})){
+    const fatLiqFam=f.fatBruto-f.taxas;
+    const pctComissao=f.fatBruto>0?pct(f.comissao||0,f.fatBruto):'—';
+    htmlFamML+=`<tr>
+      <td class="b">${f.familia}</td>
+      <td class="r mono" style="color:var(--blue);font-weight:700;">${f.fisicos} und</td>
+      <td class="r mono">${f.fatBruto>0?fmt(f.fatBruto):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r red">${f.comissao>0?'-'+fmt(f.comissao)+' <small style="color:var(--g400)">('+pctComissao+')</small>':'—'}</td>
+      <td class="r red">${f.frete!==0?(f.frete>0?'-':'+')+fmt(Math.abs(f.frete)):'—'}</td>
+      <td class="r mono">${fatLiqFam>0?fmt(fatLiqFam):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r mono">${fmt(f.custoMedio)}/un</td>
+      <td class="r red">-${fmt(f.cpv)}</td>
+      <td class="r red">${f.despOp>0?'-'+fmt(f.despOp):'—'}</td>
+      <td class="r ${f.lucroBruto>=0?'green':'red'}" style="font-weight:700;">${fmt(f.lucroBruto)}</td>
+    </tr>`;
+  }
+  document.getElementById('tbl-familias-ml').innerHTML=htmlFamML||'<tr><td colspan="10" class="empty">Sem vendas do Mercado Livre neste período (carregue os ficheiros ML e mapeie o dicionário).</td></tr>';
+
+  // Tabela famílias — COMBINADO
+  let htmlFamCombo='';
+  for(const f of Object.values(dreData.familiasCombo||{})){
+    const fatLiqFam=f.fatBruto-f.taxas;
+    htmlFamCombo+=`<tr>
+      <td class="b">${f.familia}</td>
+      <td class="r mono" style="font-weight:700;">${f.fisicos} und</td>
+      <td class="r mono">${f.fatBruto>0?fmt(f.fatBruto):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r red">${f.taxas>0?'-'+fmt(f.taxas):'—'}</td>
+      <td class="r mono">${fatLiqFam>0?fmt(fatLiqFam):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r red">-${fmt(f.cpv)}</td>
+      <td class="r red">${f.despOp>0?'-'+fmt(f.despOp):'—'}</td>
+      <td class="r ${f.lucroBruto>=0?'green':'red'}" style="font-weight:700;">${fmt(f.lucroBruto)}</td>
+    </tr>`;
+  }
+  document.getElementById('tbl-familias-combo').innerHTML=htmlFamCombo||'<tr><td colspan="8" class="empty">Sem dados</td></tr>';
+
+  // Tabela variações
+  let htmlVar='';
+  const vars=Object.values(dreData.variacoes).sort((a,b)=>b.lucro-a.lucro);
+  vars.forEach(d=>{
+    const extraStr=d.regras.extraFamilia&&d.regras.extraKit>0?`<br><span class="badge badge-extra">+${d.regras.extraKit} ${d.regras.extraFamilia}</span>`:'';
+    htmlVar+=`<tr class="var-linha" data-txt="${d.sku.toUpperCase()} ${d.regras.anuncioPai.toUpperCase()}">
+      <td><span class="b">${d.sku}</span>${extraStr}<br><small style="color:var(--g400)">${d.regras.anuncioPai}</small></td>
+      <td class="r mono">${d.qtd}</td>
+      <td class="r mono">${fmt(d.fatBruto)}</td>
+      <td class="r mono">${fmt(d.fatLiquido)}</td>
+      <td class="r red">-${fmt(d.cpv)}</td>
+      <td class="r red">-${fmt(d.totalDesp)}</td>
+      <td class="r ${(d.lucro/d.qtd)>=0?'green':'red'}">${fmt(d.lucro/d.qtd)}</td>
+      <td class="r ${d.lucro>=0?'green':'red'}">${fmt(d.lucro)}</td>
+    </tr>`;
+  });
+  document.getElementById('tbl-variacoes').innerHTML=htmlVar||'<tr><td colspan="9" class="empty">Sem dados</td></tr>';
+}
+
+function filtrarTblVar(){
+  const f=document.getElementById('srch-tbl').value.toUpperCase();
+  document.querySelectorAll('.var-linha').forEach(r=>{
+    r.style.display=r.dataset.txt.includes(f)?'':'none';
+  });
+}
+
+</script>
+</body>
+</html>
