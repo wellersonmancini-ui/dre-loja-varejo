@@ -1651,6 +1651,7 @@ function processarTikTok(mPedidos, mIncome, mes){
   //    ratear a taxa do pedido proporcionalmente quando ele tem mais de um SKU.
   let linhasValidas=[];
   let subtotalPorPedido={};
+  let linhasPorPedido={};
   mPedidos.forEach(linha=>{
     const status=String(linha['Order Status']||'').trim();
     if(status==='Cancelado') return;
@@ -1663,6 +1664,7 @@ function processarTikTok(mPedidos, mIncome, mes){
     if(!orderId||qtd===0) return;
     linhasValidas.push({orderId, sku, item:String(linha['Product Name']||''), qtd, fatBruto});
     subtotalPorPedido[orderId]=(subtotalPorPedido[orderId]||0)+fatBruto;
+    linhasPorPedido[orderId]=(linhasPorPedido[orderId]||0)+1;
   });
 
   // 3) A planilha de Pedidos é uma fotografia do momento em que foi baixada — se um
@@ -1675,13 +1677,22 @@ function processarTikTok(mPedidos, mIncome, mes){
   return linhasValidas.map(l=>{
     const totalPedidoCSV=subtotalPorPedido[l.orderId]||0;
     const temMatch=vendasLiquidasPorPedido[l.orderId]!==undefined;
-    if(!temMatch||totalPedidoCSV<=0){
+    if(!temMatch){
       return {...l, taxas:0, semTaxa:true, temExtratoRenda};
     }
-    const proporcao=l.fatBruto/totalPedidoCSV;
-    const fatBrutoReal=vendasLiquidasPorPedido[l.orderId]*proporcao;
-    const taxas=taxasPorPedido[l.orderId]*proporcao;
-    return {...l, fatBruto:fatBrutoReal, taxas, semTaxa:false, temExtratoRenda};
+    if(totalPedidoCSV>0){
+      const proporcao=l.fatBruto/totalPedidoCSV;
+      const fatBrutoReal=vendasLiquidasPorPedido[l.orderId]*proporcao;
+      const taxas=taxasPorPedido[l.orderId]*proporcao;
+      return {...l, fatBruto:fatBrutoReal, taxas, semTaxa:false, temExtratoRenda};
+    }
+    // Pedido de amostra/brinde: todas as linhas do pedido têm receita R$0 na planilha
+    // de Pedidos, então não dá pra ratear por proporção de receita (divisão por zero).
+    // Mesmo assim pode ter custo real (ex: frete da amostra) — divide esse custo
+    // igualmente entre as linhas do pedido, em vez de simplesmente ignorá-lo.
+    const custoPedido=vendasLiquidasPorPedido[l.orderId]-liquidoPorPedido[l.orderId];
+    const taxas=custoPedido/(linhasPorPedido[l.orderId]||1);
+    return {...l, fatBruto:0, taxas, semTaxa:false, temExtratoRenda};
   });
 }
 
