@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Motor DRE Shopee + ML V17 — Web</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
@@ -457,6 +457,8 @@ td.b{font-weight:700;}
 
   <!-- ════════════════ TAB: DRE EMPRESA ════════════════ -->
   <div class="tab-pane" id="pane-dre-empresa">
+
+    <div id="aviso-custo-zero" style="display:none;font-size:.78rem;color:#8a5a00;background:var(--yellow-l);padding:12px 14px;border-radius:8px;border-left:3px solid var(--yellow);margin-bottom:18px;line-height:1.5;"></div>
 
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi info"><div class="kpi-lbl">Receita Bruta</div><div class="kpi-val" id="kpi-bruta">—</div></div>
@@ -1667,6 +1669,13 @@ function processarTikTok(mPedidos, mIncome, mes){
     linhasPorPedido[orderId]=(linhasPorPedido[orderId]||0)+1;
   });
 
+  console.log('[TikTok DEBUG] Extrato de Renda: linhas lidas =', (mIncome||[]).length,
+    '| pedidos únicos tipo=Pedido =', Object.keys(vendasLiquidasPorPedido).length,
+    '| amostra ID:', Object.keys(vendasLiquidasPorPedido)[0]);
+  console.log('[TikTok DEBUG] Pedidos: linhas válidas do mês', mes, '=', linhasValidas.length,
+    '| amostra ID:', linhasValidas[0] && linhasValidas[0].orderId,
+    '| com match no extrato =', linhasValidas.filter(l=>vendasLiquidasPorPedido[l.orderId]!==undefined).length);
+
   // 3) A planilha de Pedidos é uma fotografia do momento em que foi baixada — se um
   //    pedido for reembolsado/devolvido DEPOIS disso, ela não sabe. O Extrato de Renda
   //    é mais atual (reflete reembolsos), então quando o pedido é encontrado nele,
@@ -2227,8 +2236,41 @@ function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML, gruposTikTok){
 // ══════════════════════════════════════
 //  RENDER: DRE EMPRESA
 // ══════════════════════════════════════
+// Varre todas as variações (Shopee+ML+TikTok) atrás de SKUs com custo zerado ou sem
+// família identificada — sem isso o CPV fica incompleto e o lucro aparece maior do
+// que é de verdade. Roda toda vez que o DRE é (re)desenhado, seja recém-calculado ou
+// carregado da nuvem.
+function verificarCustosFaltantes(){
+  const aviso=document.getElementById('aviso-custo-zero');
+  if(!aviso||!dreData) return;
+  let semFamilia=[], semCusto=[];
+  for(const [sku,d] of Object.entries(dreData.variacoes||{})){
+    if(!d.qtd) continue;
+    const familia=d.regras.familia;
+    if(familia==='SEM FAMÍLIA'){
+      semFamilia.push(sku);
+    } else if(!d.custoBase){
+      semCusto.push(`${sku} (${familia})`);
+    }
+  }
+  if(semFamilia.length===0 && semCusto.length===0){
+    aviso.style.display='none';
+    return;
+  }
+  let html='⚠️ <strong>Atenção — o CPV (custo do produto) pode estar incompleto neste DRE:</strong><br>';
+  if(semFamilia.length>0){
+    html+=`${semFamilia.length} SKU(s) sem família identificada (não têm custo nenhum aplicado): ${semFamilia.slice(0,15).join(', ')}${semFamilia.length>15?', ...':''}. Cadastre esses SKUs no dicionário correspondente (Shopee/ML/TikTok, aba Configuração).<br>`;
+  }
+  if(semCusto.length>0){
+    html+=`${semCusto.length} SKU(s) com família identificada mas custo unitário R$0: ${semCusto.slice(0,15).join(', ')}${semCusto.length>15?', ...':''}. Cadastre o custo dessa(s) família(s) na tabela "Custo Unitário por Família" (aba Configuração).`;
+  }
+  aviso.innerHTML=html;
+  aviso.style.display='block';
+}
+
 function renderizarDREEmpresa(){
   if(!dreData) return;
+  verificarCustosFaltantes();
   const e=dreData.empresa;
   const base=e.fatLiquido||1;
 
@@ -2575,11 +2617,14 @@ function renderizarDRESKUs(){
     const margem=d.fatBruto>0?(d.lucro/d.fatBruto*100):0;
     const extraStr=d.regras.extraFamilia&&d.regras.extraKit>0?`<span class="badge badge-extra">+${d.regras.extraKit} ${d.regras.extraFamilia}</span>`:'';
     const canalBadge=d.canal==='ML'?`<span class="badge" style="background:#fff3e0;color:#e65100;">ML</span>`:d.canal==='TikTok'?`<span class="badge" style="background:#f3e8ff;color:#7b1fa2;">TikTok</span>`:`<span class="badge" style="background:#e3f2fd;color:#1565c0;">Shopee</span>`;
+    const custoBadge = d.regras.familia==='SEM FAMÍLIA'
+      ? `<span class="badge" style="background:#fdecea;color:#d32f2f;" title="SKU não está no dicionário nem foi possível identificar a família pelo nome do produto">⚠️ Sem família</span>`
+      : (!d.custoBase ? `<span class="badge" style="background:#fdecea;color:#d32f2f;" title="Família &quot;${d.regras.familia}&quot; está sem custo unitário cadastrado">⚠️ Custo R$0</span>` : '');
     wrap.innerHTML+=`
     <div class="sku-card ${lucroClass}" data-sku="${sku.toUpperCase()} ${d.regras.anuncioPai.toUpperCase()} ${d.regras.familia.toUpperCase()}">
       <div class="sku-hdr" onclick="toggleSKU(this)">
         <div>
-          <div class="sku-code">${sku} ${canalBadge} ${extraStr}</div>
+          <div class="sku-code">${sku} ${canalBadge} ${extraStr} ${custoBadge}</div>
           <div class="sku-parent">Anúncio: ${d.regras.anuncioPai} &nbsp;|&nbsp; Família: ${d.regras.familia} &nbsp;|&nbsp; Kit: ${d.regras.kit}</div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
