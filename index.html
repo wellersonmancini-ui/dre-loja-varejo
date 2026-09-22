@@ -308,6 +308,14 @@ td.b{font-weight:700;}
           <label>MERCADO LIVRE — Faturamento / Tarifas <span class="opt">(Opcional — captura frete que "vaza" pro mês seguinte)</span></label>
           <input type="file" id="arquivoMLFaturamento" accept=".csv,.xlsx,.xls">
         </div>
+        <div class="file-block" style="border-top:1px dashed var(--g300);padding-top:12px;margin-top:4px;">
+          <label>TIKTOK SHOP — Todos os Pedidos <span class="opt">(Opcional)</span></label>
+          <input type="file" id="arquivoTikTok" accept=".csv,.xlsx,.xls">
+        </div>
+        <div class="file-block">
+          <label>TIKTOK SHOP — Extrato de Renda (Income) <span class="opt">(Opcional — sem ele o TikTok entra no DRE sem taxas calculadas)</span></label>
+          <input type="file" id="arquivoTikTokIncome" accept=".csv,.xlsx,.xls">
+        </div>
 
         <button class="btn-primary" onclick="processarCruzamentoDeDados()" id="btnCalcular" style="margin-top:10px;">
           ⚡ CRUZAR DADOS E GERAR DRE
@@ -374,6 +382,37 @@ td.b{font-weight:700;}
 
         <input type="text" class="srch" id="pesquisaDicioML" placeholder="🔍 Pesquisar SKU ML..." onkeyup="pesquisarDicioML()">
         <ul class="dict-list" id="listaDicioML"></ul>
+      </div>
+
+      <!-- DICTIONARY TIKTOK -->
+      <div class="section">
+        <div class="section-title">4. Dicionário de SKUs — TikTok Shop</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn-blue" style="margin:0;" onclick="autoMapearTikTok()" id="btnAutoMapTikTok">🔮 Auto-Mapear SKUs do TikTok</button>
+          <button class="btn-sm btn-del" style="padding:6px 12px;font-size:.78rem;" onclick="limparDicionarioTikTok()">Limpar Tudo</button>
+        </div>
+
+        <div style="font-size:.7rem;color:var(--g600);margin-bottom:12px;background:var(--blue-l);padding:7px 10px;border-radius:6px;border-left:3px solid var(--blue);">
+          💡 Aponte cada SKU do TikTok pra mesma Família/Anúncio Pai já usados na Shopee/ML — assim o custo (CPV) e o agrupamento por anúncio ficam unificados entre os três canais.
+        </div>
+
+        <div style="font-size:.73rem;font-weight:700;color:var(--g600);margin-bottom:6px;">ADICIONAR / EDITAR SKU TIKTOK:</div>
+        <div class="dict-row">
+          <input type="text" id="skuInputTikTok" placeholder="Seller SKU do TikTok">
+          <input type="text" id="skuPaiInputTikTok" placeholder="Anúncio Pai (mesmo nome da Shopee/ML)">
+        </div>
+        <div class="dict-row">
+          <input type="text" id="familiaInputTikTok" placeholder="Família (TONICO, CANETA...)">
+          <input type="number" id="kitInputTikTok" placeholder="Qtd Kit" value="1" style="max-width:90px;">
+        </div>
+        <div class="dict-row">
+          <input type="text" id="extraFamiliaInputTikTok" placeholder="Extra Família (Ex: NAVALHETE)">
+          <input type="number" id="extraKitInputTikTok" placeholder="Qtd Extra" value="0" style="max-width:90px;">
+          <button onclick="adicionarDicionarioTikTok()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.82rem;">Gravar</button>
+        </div>
+
+        <input type="text" class="srch" id="pesquisaDicioTikTok" placeholder="🔍 Pesquisar SKU TikTok..." onkeyup="pesquisarDicioTikTok()">
+        <ul class="dict-list" id="listaDicioTikTok"></ul>
       </div>
 
     </div>
@@ -472,12 +511,41 @@ td.b{font-weight:700;}
 
     <hr style="border:none;border-top:2px dashed var(--g300);margin:32px 0;">
 
-    <div class="section-title" style="font-size:1.05rem;">🔗 DRE Empresa — COMBINADO (Shopee + Mercado Livre)</div>
-    <div style="font-size:.72rem;color:var(--g600);margin:-6px 0 16px;">Visão consolidada do negócio inteiro — Ads/Afiliados só existem na Shopee, Despesas Operacionais já rateadas nos dois canais.</div>
+    <div class="section-title" style="font-size:1.05rem;">🎵 DRE Empresa — TIKTOK SHOP</div>
+    <div style="font-size:.72rem;color:var(--g600);margin:-6px 0 16px;">Sem Ads/Afiliados do TikTok (ainda não coletados) — já com Despesas Operacionais Gerais rateadas. Taxas só ficam corretas se o "Extrato de Renda" foi enviado; sem ele, aparecem como R$ 0,00 — veja o aviso na aba Configuração.</div>
+
+    <div class="kpi-grid" id="kpi-grid-tiktok">
+      <div class="kpi info"><div class="kpi-lbl">Receita Bruta TikTok</div><div class="kpi-val" id="kpitiktok-bruta">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Taxas TikTok</div><div class="kpi-val red" id="kpitiktok-taxas">—</div></div>
+      <div class="kpi info"><div class="kpi-lbl">Receita Líquida TikTok</div><div class="kpi-val" id="kpitiktok-liquida">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">CPV (Custo Físico)</div><div class="kpi-val red" id="kpitiktok-cpv">—</div></div>
+      <div class="kpi pos"><div class="kpi-lbl">Lucro Bruto TikTok</div><div class="kpi-val green" id="kpitiktok-lbruto">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Desp. Operacionais (rateada)</div><div class="kpi-val red" id="kpitiktok-desp">—</div></div>
+      <div class="kpi-hero kpi">
+        <div>
+          <div class="kpi-lbl">LUCRO LÍQUIDO TIKTOK DO MÊS</div>
+          <div class="kpi-val" id="kpitiktok-ll">—</div>
+        </div>
+        <div class="hero-pct" id="kpitiktok-margem">—</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">DRE TikTok Shop — Demonstração do Resultado</div>
+      <div id="tiktok-sem-taxa-aviso" style="display:none;font-size:.75rem;color:#8a5a00;background:var(--yellow-l);padding:8px 12px;border-radius:6px;border-left:3px solid var(--yellow);margin-bottom:14px;"></div>
+      <div class="dre-wrap" id="dre-tiktok-stmt">
+        <div class="empty">⚡ Carregue os ficheiros do TikTok e clique em "Cruzar Dados".</div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:2px dashed var(--g300);margin:32px 0;">
+
+    <div class="section-title" style="font-size:1.05rem;">🔗 DRE Empresa — COMBINADO (Shopee + Mercado Livre + TikTok)</div>
+    <div style="font-size:.72rem;color:var(--g600);margin:-6px 0 16px;">Visão consolidada do negócio inteiro — Ads/Afiliados só existem na Shopee, Despesas Operacionais já rateadas nos três canais.</div>
 
     <div class="kpi-grid" id="kpi-grid-combo">
       <div class="kpi info"><div class="kpi-lbl">Receita Bruta Total</div><div class="kpi-val" id="kpicombo-bruta">—</div></div>
-      <div class="kpi neg"><div class="kpi-lbl">Taxas Totais (Shopee+ML)</div><div class="kpi-val red" id="kpicombo-taxas">—</div></div>
+      <div class="kpi neg"><div class="kpi-lbl">Taxas Totais (3 canais)</div><div class="kpi-val red" id="kpicombo-taxas">—</div></div>
       <div class="kpi info"><div class="kpi-lbl">Receita Líquida Total</div><div class="kpi-val" id="kpicombo-liquida">—</div></div>
       <div class="kpi neg"><div class="kpi-lbl">CPV Total</div><div class="kpi-val red" id="kpicombo-cpv">—</div></div>
       <div class="kpi pos"><div class="kpi-lbl">Lucro Bruto Total</div><div class="kpi-val green" id="kpicombo-lbruto">—</div></div>
@@ -492,7 +560,7 @@ td.b{font-weight:700;}
     </div>
 
     <div class="section">
-      <div class="section-title">DRE Combinado — Demonstração do Resultado (Shopee + ML)</div>
+      <div class="section-title">DRE Combinado — Demonstração do Resultado (Shopee + ML + TikTok)</div>
       <div class="dre-wrap" id="dre-combo-stmt">
         <div class="empty">⚡ Carregue os ficheiros e clique em "Cruzar Dados".</div>
       </div>
@@ -575,7 +643,28 @@ td.b{font-weight:700;}
     </div>
 
     <div class="section">
-      <div class="section-title">Resumo por Família de Produto (Stock Físico) — COMBINADO (Shopee + ML)</div>
+      <div class="section-title">Resumo por Família de Produto (Stock Físico) — TIKTOK SHOP</div>
+      <div style="font-size:.7rem;color:var(--g600);margin-bottom:10px;">Já com rateio de Despesas Operacionais Gerais (proporcional ao faturamento combinado dos 3 canais). Taxas dependem do Extrato de Renda ter sido enviado.</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Família</th>
+            <th class="r">Saídas (und)</th>
+            <th class="r">Faturamento Bruto</th>
+            <th class="r">Taxas</th>
+            <th class="r">Fat. Líquido</th>
+            <th class="r">Custo/un</th>
+            <th class="r">Custo Total</th>
+            <th class="r">Desp. Operacionais</th>
+            <th class="r">Lucro Líquido</th>
+          </tr></thead>
+          <tbody id="tbl-familias-tiktok"><tr><td colspan="9" class="empty">Aguardando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Resumo por Família de Produto (Stock Físico) — COMBINADO (Shopee + ML + TikTok)</div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
@@ -586,7 +675,7 @@ td.b{font-weight:700;}
             <th class="r">Fat. Líquido</th>
             <th class="r">Custo Total</th>
             <th class="r">Desp. Operacionais</th>
-            <th class="r">Lucro (Shopee líq. + ML bruto)</th>
+            <th class="r">Lucro (Shopee líq. + ML bruto + TikTok líq.)</th>
           </tr></thead>
           <tbody id="tbl-familias-combo"><tr><td colspan="8" class="empty">Aguardando...</td></tr></tbody>
         </table>
@@ -663,6 +752,7 @@ td.b{font-weight:700;}
 // ══════════════════════════════════════
 let dicionarioSkus = {};
 let dicionarioSkusML = {};
+let dicionarioSkusTikTok = {};
 let dreData = null;
 let auditoriaML = [];   // vendas ML agrupadas por operação, pra conferência manual
 let custosManual = {};  // { 'FAMILIA': valor } — custo unitário salvo pelo usuário
@@ -672,6 +762,7 @@ try { custosManual = JSON.parse(localStorage.getItem('shopee_dre_v16_custos')) |
 
 try { dicionarioSkus = JSON.parse(localStorage.getItem('shopee_dre_v16_dicio')) || {}; } catch(e){}
 try { dicionarioSkusML = JSON.parse(localStorage.getItem('ml_dre_v17_dicio')) || {}; } catch(e){}
+try { dicionarioSkusTikTok = JSON.parse(localStorage.getItem('tiktok_dre_v1_dicio')) || {}; } catch(e){}
 
 // ══════════════════════════════════════
 //  NUVEM (Firebase — Auth com Google + Firestore)
@@ -738,13 +829,15 @@ auth.onAuthStateChanged(async (user)=>{
 // estava no localStorage deste navegador continua valendo até a próxima gravação.
 async function carregarConfigDaNuvem(){
   try{
-    const [dShopee,dML,dCustos]=await Promise.all([
+    const [dShopee,dML,dTikTok,dCustos]=await Promise.all([
       db.doc('config/dicionario_shopee').get(),
       db.doc('config/dicionario_ml').get(),
+      db.doc('config/dicionario_tiktok').get(),
       db.doc('config/custos_manuais').get(),
     ]);
     if(dShopee.exists && dShopee.data().skus) dicionarioSkus=dShopee.data().skus;
     if(dML.exists && dML.data().skus) dicionarioSkusML=dML.data().skus;
+    if(dTikTok.exists && dTikTok.data().skus) dicionarioSkusTikTok=dTikTok.data().skus;
     if(dCustos.exists && dCustos.data().custos) custosManual=dCustos.data().custos;
   } catch(e){ console.error('Erro ao carregar configuração da nuvem', e); }
 }
@@ -789,6 +882,7 @@ async function bootApp(){
   await carregarConfigDaNuvem();
   renderizarDicio();
   renderizarDicioML();
+  renderizarDicioTikTok();
   renderizarCustosManual();
   await popularSeletorMeses();
   let d=new Date();
@@ -1005,6 +1099,110 @@ async function autoMapearML(){
   finally{ btn.textContent='🔮 Auto-Mapear SKUs do ML'; btn.disabled=false; }
 }
 
+// ── DICIONÁRIO TIKTOK (paralelo ao da Shopee/ML) ──
+function salvarDicioTikTok(){
+  try{ localStorage.setItem('tiktok_dre_v1_dicio',JSON.stringify(dicionarioSkusTikTok)); }catch(e){}
+  if(db){ db.doc('config/dicionario_tiktok').set({skus:dicionarioSkusTikTok}).catch(e=>console.error('Erro ao salvar dicionário TikTok na nuvem',e)); }
+}
+
+function adicionarDicionarioTikTok(){
+  const v=document.getElementById('skuInputTikTok').value.trim();
+  if(!v) return;
+  dicionarioSkusTikTok[v]={
+    anuncioPai: document.getElementById('skuPaiInputTikTok').value.trim()||'Sem Anúncio',
+    familia: document.getElementById('familiaInputTikTok').value.trim().toUpperCase()||'SEM FAMÍLIA',
+    kit: parseFloat(document.getElementById('kitInputTikTok').value)||1,
+    extraFamilia: document.getElementById('extraFamiliaInputTikTok').value.trim().toUpperCase(),
+    extraKit: parseFloat(document.getElementById('extraKitInputTikTok').value)||0
+  };
+  salvarDicioTikTok(); renderizarDicioTikTok();
+  document.getElementById('skuInputTikTok').value='';
+  document.getElementById('skuInputTikTok').focus();
+}
+
+function editarDicioTikTok(sku){
+  const d=dicionarioSkusTikTok[sku]; if(!d) return;
+  document.getElementById('skuInputTikTok').value=sku;
+  document.getElementById('skuPaiInputTikTok').value=d.anuncioPai;
+  document.getElementById('familiaInputTikTok').value=d.familia;
+  document.getElementById('kitInputTikTok').value=d.kit;
+  document.getElementById('extraFamiliaInputTikTok').value=d.extraFamilia||'';
+  document.getElementById('extraKitInputTikTok').value=d.extraKit||0;
+  document.getElementById('skuInputTikTok').focus();
+}
+
+function removerDicioTikTok(sku){ delete dicionarioSkusTikTok[sku]; salvarDicioTikTok(); renderizarDicioTikTok(); }
+function limparDicionarioTikTok(){ if(confirm('Apagar todas as regras do dicionário TikTok?')){ dicionarioSkusTikTok={}; salvarDicioTikTok(); renderizarDicioTikTok(); } }
+
+function renderizarDicioTikTok(){
+  const lista=document.getElementById('listaDicioTikTok'); if(!lista) return;
+  lista.innerHTML='';
+  for(const [sku,d] of Object.entries(dicionarioSkusTikTok)){
+    let bExtra = d.extraFamilia&&d.extraKit>0 ? `<span class="badge badge-extra">+${d.extraKit} ${d.extraFamilia}</span>` : '';
+    lista.innerHTML+=`<li class="dict-item">
+      <span>
+        <strong>${sku}</strong> <span class="badge">Kit:${d.kit}</span> ${bExtra}<br>
+        <small style="color:var(--g600)">${d.anuncioPai} → ${d.familia}</small>
+      </span>
+      <span>
+        <button class="btn-edt" onclick="editarDicioTikTok('${sku.replace(/'/g,"\\'")}')">✏️</button>
+        <button class="btn-del" onclick="removerDicioTikTok('${sku.replace(/'/g,"\\'")}')">×</button>
+      </span>
+    </li>`;
+  }
+  pesquisarDicioTikTok();
+}
+
+function pesquisarDicioTikTok(){
+  const f=document.getElementById('pesquisaDicioTikTok').value.toUpperCase();
+  document.querySelectorAll('#listaDicioTikTok .dict-item').forEach(el=>{
+    el.style.display=el.innerText.toUpperCase().includes(f)?'':'none';
+  });
+}
+
+// Mesma categorização usada na Shopee/ML — TikTok usa "Product Name" como título.
+function inferirFamiliaTikTok(titulo){
+  const t=String(titulo||'').toUpperCase();
+  if(t.includes('TONICO')||t.includes('TÔNICO')) return 'TONICO';
+  if(t.includes('CANETA')) return 'CANETA';
+  if(t.includes('LAPIS')||t.includes('LÁPIS')) return 'LAPIS';
+  if(t.includes('SHAMPOO')) return 'SHAMPOO';
+  if(t.includes('NAVALHETE')) return 'NAVALHETE';
+  return 'SEM FAMÍLIA';
+}
+
+async function autoMapearTikTok(){
+  const f=document.getElementById('arquivoTikTok').files[0];
+  if(!f){ alert('Selecione o ficheiro "Todos os Pedidos" do TikTok primeiro.'); return; }
+  const btn=document.getElementById('btnAutoMapTikTok');
+  btn.textContent='A LER...'; btn.disabled=true;
+  try{
+    const tabela=await lerPedidosTikTok(f);
+    let novos=0;
+    tabela.forEach(linha=>{
+      const v=String(linha['Seller SKU']||'').trim();
+      if(!v||dicionarioSkusTikTok[v]) return;
+      const titulo=String(linha['Product Name']||'');
+      const variacao=String(linha['Variation']||'').toUpperCase();
+      const familia=inferirFamiliaTikTok(titulo);
+      // Detecta kit tanto no padrão "2 UNIDADES" (Shopee/ML) quanto "KIT 2" (comum nos títulos do TikTok)
+      let kit=1;
+      const m1=variacao.match(/(\d+)\s*(UNIDADES?|UN\b|KITS?|PE[CÇ]AS?|SHAMPOOS?|L[ÁA]PIS)/i);
+      const m2=titulo.toUpperCase().match(/KIT\s*(\d+)/);
+      if(m1) kit=parseInt(m1[1]); else if(m2) kit=parseInt(m2[1]);
+      let extraFamilia='', extraKit=0;
+      if(v.toUpperCase().endsWith('NA')||v.toUpperCase().endsWith('-NA')){
+        extraFamilia='NAVALHETE'; extraKit=1;
+      }
+      dicionarioSkusTikTok[v]={anuncioPai:titulo||'Sem Anúncio', familia, kit, extraFamilia, extraKit};
+      novos++;
+    });
+    salvarDicioTikTok(); renderizarDicioTikTok();
+    alert(`Auto-mapeamento TikTok concluído! ${novos} novos SKUs adicionados. Revise o "Anúncio Pai" de cada um pra bater com o nome usado na Shopee/ML, se quiser unificar no DRE por Anúncio.`);
+  } catch(e){ alert('Erro a ler o ficheiro.'); console.error(e); }
+  finally{ btn.textContent='🔮 Auto-Mapear SKUs do TikTok'; btn.disabled=false; }
+}
+
 function renderizarDicio(){
   const lista=document.getElementById('listaDicio'); lista.innerHTML='';
   for(const [sku,d] of Object.entries(dicionarioSkus)){
@@ -1122,6 +1320,44 @@ function lerExcelComCabecalho(file, headerRow){
   });
 }
 
+// Lê uma aba específica de um Excel com várias abas (caso do Extrato de Renda do TikTok,
+// que traz "Detalhes do pedido", "Extratos", "Relatórios" etc. no mesmo ficheiro).
+function lerExcelAbaObj(file, nomeAba){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const d=new Uint8Array(e.target.result);
+        const wb=XLSX.read(d,{type:'array'});
+        const nome = wb.SheetNames.find(n=>n===nomeAba) || wb.SheetNames.find(n=>n.replace(/\s/g,'')===nomeAba.replace(/\s/g,'')) || wb.SheetNames[0];
+        res(XLSX.utils.sheet_to_json(wb.Sheets[nome],{defval:''}));
+      } catch(err){rej(err);}
+    };
+    r.onerror=rej; r.readAsArrayBuffer(file);
+  });
+}
+
+// Lê um ficheiro CSV (usado pelo relatório "Todos os Pedidos" do TikTok Shop).
+function lerCSVObj(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        let texto=e.target.result;
+        if(texto.charCodeAt(0)===0xFEFF) texto=texto.slice(1); // remove BOM
+        const wb=XLSX.read(texto,{type:'string'});
+        res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}));
+      } catch(err){rej(err);}
+    };
+    r.onerror=rej; r.readAsText(file,'utf-8');
+  });
+}
+
+// O relatório "Todos os Pedidos" do TikTok normalmente vem em .csv, mas aceita .xlsx também.
+function lerPedidosTikTok(file){
+  return /\.csv$/i.test(file.name) ? lerCSVObj(file) : lerExcelObj(file);
+}
+
 // ══════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════
@@ -1133,6 +1369,11 @@ function parseMoeda(s){
   if(str.includes(',')&&str.includes('.')) str=str.replace(/\./g,'').replace(',','.');
   else if(str.includes(',')) str=str.replace(',','.');
   return parseFloat(str)||0;
+}
+
+// O extrato de renda do TikTok usa "BRL 23,78" em vez de "R$ 23,78".
+function parseMoedaTikTok(s){
+  return parseMoeda(String(s||'').replace('BRL','').trim());
 }
 
 function converterData(v){
@@ -1148,6 +1389,16 @@ function converterData(v){
     return `${ano}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
   }
   return '';
+}
+
+// O relatório de Pedidos do TikTok usa datas no formato americano MM/DD/YYYY (ex:
+// "09/11/2026 8:48:28 AM") — diferente do DD/MM usado pelo resto do sistema.
+function converterDataTikTok(v){
+  const s=String(v||'').trim();
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return '';
+  const mesNum=m[1].padStart(2,'0'), ano=m[3];
+  return `${ano}-${mesNum}`;
 }
 
 function extrairMktEspecifico(matriz){
@@ -1357,6 +1608,84 @@ function filtrarAuditoriaML(){
 }
 
 // ══════════════════════════════════════
+//  PROCESSAMENTO TIKTOK SHOP
+// ══════════════════════════════════════
+// O TikTok expõe dois relatórios diferentes: "Todos os Pedidos" (uma linha por
+// pedido/SKU, com o Seller SKU, quantidade e valores de venda — o equivalente ao
+// relatório de vendas da Shopee) e o "Extrato de Renda / Income" (um extrato
+// financeiro de liquidação, com as taxas/comissões reais, mas onde o MESMO pedido
+// pode aparecer em várias linhas ao longo do tempo conforme é liquidado/ajustado).
+// Por isso usamos o relatório de Pedidos como fonte de SKU/quantidade/receita
+// (confiável, uma linha por venda) e cruzamos com o Extrato de Renda SÓ para
+// puxar o valor realmente liquidado por pedido.
+//
+// IMPORTANTE (confirmado conferindo um pedido real no próprio TikTok Seller
+// Center): o desconto total não é só "Taxas e impostos" — o "Custo líquido de
+// frete" também pode ficar negativo (o TikTok nem sempre cobre o frete
+// inteiro). Por isso a taxa usada aqui é a DIFERENÇA entre "Vendas líquidas dos
+// produtos" e "Valor total a ser liquidado" — isso pega frete + comissão +
+// serviço + imposto + anúncios + qualquer ajuste de uma vez, sem risco de
+// esquecer algum tipo de taxa que o TikTok cobre.
+function processarTikTok(mPedidos, mIncome, mes){
+  if(!mPedidos || !mPedidos.length) return [];
+
+  // 1) Soma "Vendas líquidas dos produtos" e "Valor total a ser liquidado" por
+  //    pedido, a partir do Extrato de Renda (opcional) — a diferença entre os
+  //    dois é o total de taxas/frete/comissões daquele pedido.
+  let vendasLiquidasPorPedido={};
+  let liquidoPorPedido={};
+  (mIncome||[]).forEach(linha=>{
+    if(String(linha['Tipo de transação']||'').trim()!=='Pedido') return;
+    const idPedido=String(linha['ID do pedido/ajuste']||'').trim();
+    if(!idPedido) return;
+    vendasLiquidasPorPedido[idPedido]=(vendasLiquidasPorPedido[idPedido]||0)+parseMoedaTikTok(linha['Vendas líquidas dos produtos']);
+    liquidoPorPedido[idPedido]=(liquidoPorPedido[idPedido]||0)+parseMoedaTikTok(linha['Valor total a ser liquidado']);
+  });
+  let taxasPorPedido={};
+  for(const id in vendasLiquidasPorPedido){
+    taxasPorPedido[id]=vendasLiquidasPorPedido[id]-liquidoPorPedido[id];
+  }
+  const temExtratoRenda = (mIncome||[]).length>0;
+
+  // 2) Linhas válidas do mês (exclui canceladas) + subtotal por pedido, pra poder
+  //    ratear a taxa do pedido proporcionalmente quando ele tem mais de um SKU.
+  let linhasValidas=[];
+  let subtotalPorPedido={};
+  mPedidos.forEach(linha=>{
+    const status=String(linha['Order Status']||'').trim();
+    if(status==='Cancelado') return;
+    const dataCriacao=converterDataTikTok(linha['Created Time']);
+    if(!dataCriacao.startsWith(mes)) return;
+    const orderId=String(linha['Order ID']||'').trim();
+    const sku=String(linha['Seller SKU']||'').trim()||'Sem SKU';
+    const qtd=Math.abs(parseFloat(linha['Quantity']))||0;
+    const fatBruto=Math.abs(parseMoedaTikTok(linha['SKU Subtotal After Discount']));
+    if(!orderId||qtd===0) return;
+    linhasValidas.push({orderId, sku, item:String(linha['Product Name']||''), qtd, fatBruto});
+    subtotalPorPedido[orderId]=(subtotalPorPedido[orderId]||0)+fatBruto;
+  });
+
+  // 3) A planilha de Pedidos é uma fotografia do momento em que foi baixada — se um
+  //    pedido for reembolsado/devolvido DEPOIS disso, ela não sabe. O Extrato de Renda
+  //    é mais atual (reflete reembolsos), então quando o pedido é encontrado nele,
+  //    confiamos no valor de lá (rateado por SKU proporcionalmente ao subtotal de cada
+  //    linha) em vez do valor "congelado" da planilha de Pedidos. Um pedido totalmente
+  //    reembolsado assim vira corretamente R$0 de receita e R$0 de taxa, em vez de
+  //    aparecer como venda cheia sem desconto nenhum.
+  return linhasValidas.map(l=>{
+    const totalPedidoCSV=subtotalPorPedido[l.orderId]||0;
+    const temMatch=vendasLiquidasPorPedido[l.orderId]!==undefined;
+    if(!temMatch||totalPedidoCSV<=0){
+      return {...l, taxas:0, semTaxa:true, temExtratoRenda};
+    }
+    const proporcao=l.fatBruto/totalPedidoCSV;
+    const fatBrutoReal=vendasLiquidasPorPedido[l.orderId]*proporcao;
+    const taxas=taxasPorPedido[l.orderId]*proporcao;
+    return {...l, fatBruto:fatBrutoReal, taxas, semTaxa:false, temExtratoRenda};
+  });
+}
+
+// ══════════════════════════════════════
 //  MAIN PROCESSING
 // ══════════════════════════════════════
 async function processarCruzamentoDeDados(){
@@ -1366,6 +1695,8 @@ async function processarCruzamentoDeDados(){
   const fAfil=document.getElementById('arquivoAfiliados').files[0];
   const fMLConc=document.getElementById('arquivoMLConciliacao').files[0];
   const fMLFat=document.getElementById('arquivoMLFaturamento').files[0];
+  const fTikTok=document.getElementById('arquivoTikTok').files[0];
+  const fTikTokIncome=document.getElementById('arquivoTikTokIncome').files[0];
   const mes=document.getElementById('mesFiltro').value;
   if(!fFin||!fShop){ alert('Ficheiros Vendas e Financeiro são obrigatórios.'); return; }
   if(!mes){ alert('Selecione o mês de referência.'); return; }
@@ -1377,16 +1708,19 @@ async function processarCruzamentoDeDados(){
     promessas.push(fAfil?lerExcelArr(fAfil):Promise.resolve(null));
     promessas.push(fMLConc?lerExcelComCabecalho(fMLConc,3):Promise.resolve(null));
     promessas.push(fMLFat?lerExcelComCabecalho(fMLFat,8):Promise.resolve(null));
-    const [mFin,tShop,mAds,mAfil,mMLConc,mMLFat]=await Promise.all(promessas);
+    promessas.push(fTikTok?lerPedidosTikTok(fTikTok):Promise.resolve(null));
+    promessas.push(fTikTokIncome?lerExcelAbaObj(fTikTokIncome,'Detalhes do pedido'):Promise.resolve(null));
+    const [mFin,tShop,mAds,mAfil,mMLConc,mMLFat,mTikTokPedidos,mTikTokIncome]=await Promise.all(promessas);
     btn.textContent='A CALCULAR...';
     const gruposML=mMLConc?processarML(mMLConc,mMLFat,mes):[];
     renderizarAuditoriaML(gruposML);
-    executarMotor(mFin,tShop,mAds,mAfil,mes,gruposML);
+    const gruposTikTok=mTikTokPedidos?processarTikTok(mTikTokPedidos,mTikTokIncome,mes):[];
+    executarMotor(mFin,tShop,mAds,mAfil,mes,gruposML,gruposTikTok);
   } catch(e){ alert('Erro a processar ficheiros. Verifique os formatos.'); console.error(e); }
   finally{ btn.textContent='⚡ CRUZAR DADOS E GERAR DRE'; btn.disabled=false; }
 }
 
-function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
+function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML, gruposTikTok){
   // ── Extrair MKT específico ──
   const adsEsp=extrairMktEspecifico(mAds);
   const afilEsp=extrairMktEspecifico(mAfil);
@@ -1394,10 +1728,11 @@ function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
   for(let k in adsEsp) totalAds+=adsEsp[k];
   for(let k in afilEsp) totalAfil+=afilEsp[k];
 
-  // Faturamento bruto do Mercado Livre (já líquido de frete/parcelamento do comprador),
-  // usado só pra ratear Despesas Operacionais Gerais entre os dois canais — os gastos fixos
+  // Faturamento bruto do Mercado Livre e do TikTok (já líquidos de frete/desconto),
+  // usados só pra ratear Despesas Operacionais Gerais entre os três canais — os gastos fixos
   // do negócio (aluguel, sistema, funcionário etc.) são de todo o negócio, não só da Shopee.
   const fatBrutoMLTotal=(gruposML||[]).reduce((s,g)=>s+g.fatBruto,0);
+  const fatBrutoTikTokTotal=(gruposTikTok||[]).reduce((s,g)=>s+g.fatBruto,0);
 
   // ── Processar Financeiro ──
   let despOp=0, mktGeral=0;
@@ -1539,9 +1874,9 @@ function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
     const adsVar=totalAds*pesoLoja;
     const afilVar=totalAfil*pesoLoja;
     const mktGeralVar=mktGeral*pesoLoja;
-    // Despesas Operacionais Gerais são rateadas pelo faturamento COMBINADO (Shopee + ML) —
-    // é o único gasto que agora é compartilhado entre os dois canais.
-    const despOpVar=despOp*(fatBruto/(fatBrutoTotal+fatBrutoMLTotal));
+    // Despesas Operacionais Gerais são rateadas pelo faturamento COMBINADO (Shopee + ML + TikTok) —
+    // é o único gasto que agora é compartilhado entre os três canais.
+    const despOpVar=despOp*(fatBruto/(fatBrutoTotal+fatBrutoMLTotal+fatBrutoTikTokTotal));
 
     // CPV
     const custoBase=custoPorFamilia[regras.familia]||0;
@@ -1613,7 +1948,7 @@ function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
   //    mas ainda SEM Ads/Afiliados, que continuam exclusivos da Shopee por opção do usuário) ──
   let dreFamMapML={};
   let fatBrutoML=0, comissaoML=0, freteML=0, cpvTotalML=0, despOpML=0;
-  const denominadorCombinado=fatBrutoTotal+fatBrutoMLTotal;
+  const denominadorCombinado=fatBrutoTotal+fatBrutoMLTotal+fatBrutoTikTokTotal;
   (gruposML||[]).forEach(g=>{
     // Se o SKU não estiver cadastrado no dicionário, infere a família automaticamente
     // pelo nome do produto (mesma lógica do Auto-Mapear) em vez de jogar em "SEM FAMÍLIA".
@@ -1706,27 +2041,119 @@ function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
     dreAncMap[pai].canais.add('ML');
   }
 
-  // ── Combinado (Shopee + ML) por família ──
+  // ── Processar TikTok Shop (por família, com rateio de Despesas Operacionais Gerais —
+  //    ainda SEM Ads/Afiliados/Criadores por SKU — esses valores só existem hoje agregados
+  //    no Extrato de Renda). Taxas vêm do cruzamento feito em processarTikTok(); quando o
+  //    Extrato de Renda não foi enviado (ou o pedido não foi encontrado nele), a taxa fica
+  //    zerada e contabilizamos aqui pra avisar o usuário em vez de fingir que é R$0 mesmo. ──
+  let dreFamMapTikTok={};
+  let fatBrutoTikTok=0, taxasTikTok=0, cpvTotalTikTok=0, despOpTikTok=0;
+  let valorSemTaxaTikTok=0;
+  (gruposTikTok||[]).forEach(g=>{
+    const regras=dicionarioSkusTikTok[g.sku]||{anuncioPai:g.item||'Sem Anúncio (TikTok)',familia:inferirFamiliaTikTok(g.item),kit:1,extraFamilia:'',extraKit:0};
+    const custoBase=custoPorFamilia[regras.familia]||0;
+    const cpvMain=(custoBase*regras.kit)*g.qtd;
+    const custoExtraBase=custoPorFamilia[regras.extraFamilia]||0;
+    const cpvExtra=regras.extraFamilia&&regras.extraKit>0?(custoExtraBase*regras.extraKit)*g.qtd:0;
+    const despOpVarTikTok=denominadorCombinado>0?despOp*(g.fatBruto/denominadorCombinado):0;
+
+    fatBrutoTikTok+=g.fatBruto; taxasTikTok+=g.taxas; cpvTotalTikTok+=(cpvMain+cpvExtra); despOpTikTok+=despOpVarTikTok;
+    if(g.semTaxa) valorSemTaxaTikTok+=g.fatBruto;
+
+    const fam=regras.familia;
+    if(!dreFamMapTikTok[fam]) dreFamMapTikTok[fam]={familia:fam,fisicos:0,fatBruto:0,taxas:0,custoMedio:custoBase,cpv:0,despOp:0,lucroBruto:0};
+    dreFamMapTikTok[fam].fisicos+=(g.qtd*regras.kit);
+    dreFamMapTikTok[fam].fatBruto+=g.fatBruto;
+    dreFamMapTikTok[fam].taxas+=g.taxas;
+    dreFamMapTikTok[fam].cpv+=cpvMain;
+    dreFamMapTikTok[fam].despOp+=despOpVarTikTok;
+    dreFamMapTikTok[fam].lucroBruto+=(g.fatBruto-g.taxas-cpvMain-despOpVarTikTok);
+    if(regras.extraFamilia&&regras.extraKit>0){
+      const fe=regras.extraFamilia;
+      if(!dreFamMapTikTok[fe]) dreFamMapTikTok[fe]={familia:fe,fisicos:0,fatBruto:0,taxas:0,custoMedio:custoExtraBase,cpv:0,despOp:0,lucroBruto:0};
+      dreFamMapTikTok[fe].fisicos+=(g.qtd*regras.extraKit);
+      dreFamMapTikTok[fe].cpv+=cpvExtra;
+      dreFamMapTikTok[fe].lucroBruto-=cpvExtra;
+    }
+  });
+  const fatLiquidoTikTok=fatBrutoTikTok-taxasTikTok;
+  const lucroBrutoTikTok=fatLiquidoTikTok-cpvTotalTikTok-despOpTikTok;
+
+  // ── DRE por SKU e por Anúncio Pai — TikTok Shop ──
+  let dadosPorSkuTikTok={};
+  (gruposTikTok||[]).forEach(g=>{
+    if(!dadosPorSkuTikTok[g.sku]) dadosPorSkuTikTok[g.sku]={qtd:0,fatBruto:0,taxas:0,item:g.item};
+    const d=dadosPorSkuTikTok[g.sku];
+    d.qtd+=g.qtd; d.fatBruto+=g.fatBruto; d.taxas+=g.taxas;
+  });
+
+  for(const [sku,d] of Object.entries(dadosPorSkuTikTok)){
+    const regras=dicionarioSkusTikTok[sku]||{anuncioPai:d.item||'Sem Anúncio (TikTok)',familia:inferirFamiliaTikTok(d.item),kit:1,extraFamilia:'',extraKit:0};
+    const taxas=d.taxas;
+    const fatLiquido=d.fatBruto-taxas;
+    const custoBase=custoPorFamilia[regras.familia]||0;
+    const cpvMain=(custoBase*regras.kit)*d.qtd;
+    const custoExtraBase=custoPorFamilia[regras.extraFamilia]||0;
+    const cpvExtra=regras.extraFamilia&&regras.extraKit>0?(custoExtraBase*regras.extraKit)*d.qtd:0;
+    const cpv=cpvMain+cpvExtra;
+    const lucroBruto=fatLiquido-cpv;
+    const despOpVar=denominadorCombinado>0?despOp*(d.fatBruto/denominadorCombinado):0;
+    const ads=0, afil=0, mktGeralVar=0; // TikTok ainda não coleta Ads/Afiliados/MKT Geral por SKU
+    const totalDesp=ads+afil+mktGeralVar+despOpVar;
+    const lucro=lucroBruto-totalDesp;
+
+    dreVarMap[sku]={
+      sku, regras, qtd:d.qtd,
+      fatBruto:d.fatBruto, taxas, fatLiquido,
+      cpv, cpvMain, cpvExtra,
+      lucroBruto,
+      ads, afil, mktGeral:mktGeralVar, despOp:despOpVar,
+      totalDesp, lucro,
+      custoBase, custoExtraBase,
+      canal:'TikTok',
+    };
+
+    const pai=regras.anuncioPai;
+    if(!dreAncMap[pai]){
+      dreAncMap[pai]={
+        variacoes:[], fatBruto:0, taxas:0, fatLiquido:0, cpv:0,
+        lucroBruto:0, ads:0, afil:0, mktGeral:0, despOp:0, totalDesp:0, lucro:0, canais:new Set(),
+      };
+    }
+    dreAncMap[pai].variacoes.push(sku);
+    dreAncMap[pai].fatBruto+=d.fatBruto;
+    dreAncMap[pai].taxas+=taxas;
+    dreAncMap[pai].fatLiquido+=fatLiquido;
+    dreAncMap[pai].cpv+=cpv;
+    dreAncMap[pai].lucroBruto+=lucroBruto;
+    dreAncMap[pai].despOp+=despOpVar;
+    dreAncMap[pai].totalDesp+=totalDesp;
+    dreAncMap[pai].lucro+=lucro;
+    dreAncMap[pai].canais.add('TikTok');
+  }
+
+  // ── Combinado (Shopee + ML + TikTok) por família ──
   let dreFamMapCombo={};
-  const todasFamilias=new Set([...Object.keys(dreFamMap), ...Object.keys(dreFamMapML)]);
+  const todasFamilias=new Set([...Object.keys(dreFamMap), ...Object.keys(dreFamMapML), ...Object.keys(dreFamMapTikTok)]);
   todasFamilias.forEach(fam=>{
     const s=dreFamMap[fam]||{fisicos:0,fatBruto:0,taxas:0,cpv:0,despOp:0,lucroBruto:0};
     const m=dreFamMapML[fam]||{fisicos:0,fatBruto:0,taxas:0,cpv:0,despOp:0,lucroBruto:0};
+    const t=dreFamMapTikTok[fam]||{fisicos:0,fatBruto:0,taxas:0,cpv:0,despOp:0,lucroBruto:0};
     dreFamMapCombo[fam]={
       familia:fam,
-      fisicos:s.fisicos+m.fisicos,
-      fatBruto:s.fatBruto+m.fatBruto,
-      taxas:s.taxas+m.taxas,
-      cpv:s.cpv+m.cpv,
-      despOp:(s.despOp||0)+(m.despOp||0), // agora rateado nos dois canais
-      lucroBruto:s.lucroBruto+m.lucroBruto, // ambos já vêm líquidos de despesas operacionais
+      fisicos:s.fisicos+m.fisicos+t.fisicos,
+      fatBruto:s.fatBruto+m.fatBruto+t.fatBruto,
+      taxas:s.taxas+m.taxas+t.taxas,
+      cpv:s.cpv+m.cpv+t.cpv,
+      despOp:(s.despOp||0)+(m.despOp||0)+(t.despOp||0), // agora rateado nos três canais
+      lucroBruto:s.lucroBruto+m.lucroBruto+t.lucroBruto, // já vêm líquidos de despesas operacionais
     };
   });
 
   // ── Dados empresa ──
-  // A Despesa Operacional Geral é rateada pelo faturamento COMBINADO (Shopee+ML) — por isso,
-  // pro resumo/demonstrativo só-Shopee, usamos a fatia que sobra pra Shopee (não o valor bruto
-  // total do arquivo Financeiro, que incluiria também a parte que já foi pro ML).
+  // A Despesa Operacional Geral é rateada pelo faturamento COMBINADO (Shopee+ML+TikTok) — por
+  // isso, pro resumo/demonstrativo só-Shopee, usamos a fatia que sobra pra Shopee (não o valor
+  // bruto total do arquivo Financeiro, que incluiria também a parte que já foi pro ML/TikTok).
   const despOpShopee=denominadorCombinado>0?despOp*(fatBrutoTotal/denominadorCombinado):despOp;
   const fatLiquidoTotal=fatBrutoTotal-taxasTotal;
   const lucroBrutoTotal=fatLiquidoTotal-cpvTotal;
@@ -1745,10 +2172,16 @@ function executarMotor(mFin, tShop, mAds, mAfil, mes, gruposML){
       fatBruto:fatBrutoML, taxas:taxasML, fatLiquido:fatLiquidoML,
       cpv:cpvTotalML, despOp:despOpML, lucroBruto:lucroBrutoML,
     },
+    empresaTikTok:{
+      fatBruto:fatBrutoTikTok, taxas:taxasTikTok, fatLiquido:fatLiquidoTikTok,
+      cpv:cpvTotalTikTok, despOp:despOpTikTok, lucroBruto:lucroBrutoTikTok,
+      valorSemTaxa:valorSemTaxaTikTok,
+    },
     anuncios:dreAncMap,
     variacoes:dreVarMap,
     familias:dreFamMap,
     familiasML:dreFamMapML,
+    familiasTikTok:dreFamMapTikTok,
     familiasCombo:dreFamMapCombo,
   };
 
@@ -1855,6 +2288,7 @@ function renderizarDREEmpresa(){
   `;
 
   renderizarDREEmpresaML();
+  renderizarDREEmpresaTikTok();
   renderizarDREEmpresaCombo();
 }
 
@@ -1918,16 +2352,85 @@ function renderizarDREEmpresaML(){
   `;
 }
 
+function renderizarDREEmpresaTikTok(){
+  const et=dreData.empresaTikTok||{fatBruto:0,taxas:0,fatLiquido:0,cpv:0,despOp:0,lucroBruto:0,valorSemTaxa:0};
+  const mb=et.fatBruto||1;
+
+  document.getElementById('kpitiktok-bruta').textContent=fmt(et.fatBruto);
+  document.getElementById('kpitiktok-taxas').textContent='-'+fmt(et.taxas);
+  document.getElementById('kpitiktok-liquida').textContent=fmt(et.fatLiquido);
+  document.getElementById('kpitiktok-cpv').textContent='-'+fmt(et.cpv);
+  document.getElementById('kpitiktok-lbruto').textContent=fmt(et.fatLiquido-et.cpv);
+  document.getElementById('kpitiktok-desp').textContent='-'+fmt(et.despOp);
+  const llEl=document.getElementById('kpitiktok-ll');
+  llEl.textContent=fmt(et.lucroBruto);
+  llEl.className='kpi-val '+(et.lucroBruto>=0?'green':'red');
+  document.getElementById('kpitiktok-margem').textContent=pct(et.lucroBruto,et.fatBruto);
+
+  const aviso=document.getElementById('tiktok-sem-taxa-aviso');
+  if(et.valorSemTaxa>0){
+    aviso.style.display='block';
+    aviso.innerHTML=`⚠️ ${fmt(et.valorSemTaxa)} em vendas do TikTok não tiveram a taxa calculada (pedido não encontrado no Extrato de Renda enviado, ou o extrato não foi enviado) — essa parte está entrando no DRE <strong>sem desconto de taxa</strong>, o que deixa o lucro do TikTok superestimado até você conferir/enviar o extrato certo.`;
+  } else {
+    aviso.style.display='none';
+  }
+
+  const stmt=document.getElementById('dre-tiktok-stmt');
+  function row(sinal,lbl,val,cls,indent){
+    const sp=sinal==='+'?'<span class="sgn p">+</span>':sinal==='-'?'<span class="sgn m">-</span>':'<span class="sgn e">=</span>';
+    const ic=indent?`i${indent}`:'';
+    return `<div class="dre-row ${ic}">
+      <div class="dre-lbl">${sp} ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function subrow(lbl,val,cls){
+    return `<div class="dre-row sub">
+      <div class="dre-lbl"><span class="sgn e">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls||''}">${fmt(Math.abs(val))}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+  function totrow(lbl,val){
+    const cls=val>=0?'green':'red';
+    return `<div class="dre-row tot">
+      <div class="dre-lbl"><span class="sgn e" style="color:var(--shopee)">=</span> ${lbl}</div>
+      <div class="dre-nums"><div class="dre-v ${cls}">${fmt(val)}</div><span class="dre-pct">${pct(val,mb)}</span></div>
+    </div>`;
+  }
+
+  stmt.innerHTML=`
+    <div class="dre-section-hdr">▌ RECEITA</div>
+    ${row('+','Receita Bruta de Vendas (TikTok)',et.fatBruto,'',0)}
+    ${row('-','Taxas TikTok (Comissão + Serviço + Impostos)',et.taxas,'red',1)}
+    <hr class="dre-hr">
+    ${subrow('RECEITA LÍQUIDA',et.fatLiquido,'green')}
+
+    <div class="dre-section-hdr">▌ CUSTO DOS PRODUTOS VENDIDOS</div>
+    ${row('-','CPV — Custo dos Produtos Vendidos (Stock Físico)',et.cpv,'red',1)}
+    <hr class="dre-hr">
+    ${subrow('LUCRO BRUTO (antes de Desp. Operacionais)', et.fatLiquido-et.cpv, (et.fatLiquido-et.cpv)>=0?'green':'red')}
+
+    <div class="dre-section-hdr">▌ DESPESAS OPERACIONAIS</div>
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">ADMINISTRATIVO</div>
+    ${row('-','Despesas Operacionais Gerais (rateada)',et.despOp,'red',2)}
+    <hr class="dre-hr">
+
+    <div class="dre-section-hdr">▌ RESULTADO</div>
+    ${totrow('LUCRO LÍQUIDO TIKTOK DO EXERCÍCIO',et.lucroBruto)}
+  `;
+}
+
 function renderizarDREEmpresaCombo(){
   const e=dreData.empresa;
   const em=dreData.empresaML||{fatBruto:0,taxas:0,fatLiquido:0,cpv:0,despOp:0,lucroBruto:0};
+  const et=dreData.empresaTikTok||{fatBruto:0,taxas:0,fatLiquido:0,cpv:0,despOp:0,lucroBruto:0};
   const c={
-    fatBruto:e.fatBruto+em.fatBruto,
-    taxas:e.taxas+em.taxas,
-    fatLiquido:e.fatLiquido+em.fatLiquido,
-    cpv:e.cpv+em.cpv,
+    fatBruto:e.fatBruto+em.fatBruto+et.fatBruto,
+    taxas:e.taxas+em.taxas+et.taxas,
+    fatLiquido:e.fatLiquido+em.fatLiquido+et.fatLiquido,
+    cpv:e.cpv+em.cpv+et.cpv,
     ads:e.ads, afil:e.afil, mktGeral:e.mktGeral, // só existem na Shopee
-    despOp:e.despOp+em.despOp,
+    despOp:e.despOp+em.despOp+et.despOp,
   };
   c.lucroBruto=c.fatLiquido-c.cpv;
   c.totalDesp=c.ads+c.afil+c.mktGeral+c.despOp;
@@ -1970,7 +2473,7 @@ function renderizarDREEmpresaCombo(){
 
   stmt.innerHTML=`
     <div class="dre-section-hdr">▌ RECEITA</div>
-    ${row('+','Receita Bruta de Vendas (Shopee + ML)',c.fatBruto,'',0)}
+    ${row('+','Receita Bruta de Vendas (Shopee + ML + TikTok)',c.fatBruto,'',0)}
     ${row('-','Taxas e Comissões das Plataformas',c.taxas,'red',1)}
     <hr class="dre-hr">
     ${subrow('RECEITA LÍQUIDA',c.fatLiquido,'green')}
@@ -1985,8 +2488,8 @@ function renderizarDREEmpresaCombo(){
     ${row('-','Shopee Ads (direto)',c.ads,'red',2)}
     ${row('-','Afiliados (direto)',c.afil,'red',2)}
     ${row('-','Marketing Geral (ficheiro financeiro)',c.mktGeral,'red',2)}
-    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">ADMINISTRATIVO (SHOPEE + ML)</div>
-    ${row('-','Despesas Operacionais Gerais (rateada nos 2 canais)',c.despOp,'red',2)}
+    <div class="dre-row i1" style="font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--g400);padding-top:6px;">ADMINISTRATIVO (SHOPEE + ML + TIKTOK)</div>
+    ${row('-','Despesas Operacionais Gerais (rateada nos 3 canais)',c.despOp,'red',2)}
     <hr class="dre-hr">
     ${subrow('TOTAL DESPESAS OPERACIONAIS',c.totalDesp,'red')}
 
@@ -2007,7 +2510,11 @@ function renderizarDREAnuncios(){
     const barColor=d.lucro>=0?'var(--green)':'var(--red)';
     const barW=Math.min(Math.abs(margem),100);
     const canaisArr=d.canais?[...d.canais]:['Shopee'];
-    const badgesCanal=canaisArr.map(c=>`<span class="badge" style="background:${c==='ML'?'#fff3e0':'#e3f2fd'};color:${c==='ML'?'#e65100':'#1565c0'};">${c}</span>`).join(' ');
+    const coresCanal={ML:['#fff3e0','#e65100'],TikTok:['#f3e8ff','#7b1fa2']};
+    const badgesCanal=canaisArr.map(c=>{
+      const [bg,fg]=coresCanal[c]||['#e3f2fd','#1565c0'];
+      return `<span class="badge" style="background:${bg};color:${fg};">${c}</span>`;
+    }).join(' ');
     grid.innerHTML+=`
     <div class="a-card" data-nome="${pai.toUpperCase()}">
       <div class="a-card-hdr">
@@ -2056,7 +2563,7 @@ function renderizarDRESKUs(){
     const lucroUn=d.qtd>0?d.lucro/d.qtd:0;
     const margem=d.fatBruto>0?(d.lucro/d.fatBruto*100):0;
     const extraStr=d.regras.extraFamilia&&d.regras.extraKit>0?`<span class="badge badge-extra">+${d.regras.extraKit} ${d.regras.extraFamilia}</span>`:'';
-    const canalBadge=d.canal==='ML'?`<span class="badge" style="background:#fff3e0;color:#e65100;">ML</span>`:`<span class="badge" style="background:#e3f2fd;color:#1565c0;">Shopee</span>`;
+    const canalBadge=d.canal==='ML'?`<span class="badge" style="background:#fff3e0;color:#e65100;">ML</span>`:d.canal==='TikTok'?`<span class="badge" style="background:#f3e8ff;color:#7b1fa2;">TikTok</span>`:`<span class="badge" style="background:#e3f2fd;color:#1565c0;">Shopee</span>`;
     wrap.innerHTML+=`
     <div class="sku-card ${lucroClass}" data-sku="${sku.toUpperCase()} ${d.regras.anuncioPai.toUpperCase()} ${d.regras.familia.toUpperCase()}">
       <div class="sku-hdr" onclick="toggleSKU(this)">
@@ -2177,6 +2684,24 @@ function renderizarTabelas(){
     </tr>`;
   }
   document.getElementById('tbl-familias-ml').innerHTML=htmlFamML||'<tr><td colspan="10" class="empty">Sem vendas do Mercado Livre neste período (carregue os ficheiros ML e mapeie o dicionário).</td></tr>';
+
+  // Tabela famílias — TIKTOK
+  let htmlFamTikTok='';
+  for(const f of Object.values(dreData.familiasTikTok||{})){
+    const fatLiqFam=f.fatBruto-f.taxas;
+    htmlFamTikTok+=`<tr>
+      <td class="b">${f.familia}</td>
+      <td class="r mono" style="color:#7b1fa2;font-weight:700;">${f.fisicos} und</td>
+      <td class="r mono">${f.fatBruto>0?fmt(f.fatBruto):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r red">${f.taxas>0?'-'+fmt(f.taxas):'—'}</td>
+      <td class="r mono">${fatLiqFam>0?fmt(fatLiqFam):'<small style="color:var(--g400)">Em combo</small>'}</td>
+      <td class="r mono">${fmt(f.custoMedio)}/un</td>
+      <td class="r red">-${fmt(f.cpv)}</td>
+      <td class="r red">${f.despOp>0?'-'+fmt(f.despOp):'—'}</td>
+      <td class="r ${f.lucroBruto>=0?'green':'red'}" style="font-weight:700;">${fmt(f.lucroBruto)}</td>
+    </tr>`;
+  }
+  document.getElementById('tbl-familias-tiktok').innerHTML=htmlFamTikTok||'<tr><td colspan="9" class="empty">Sem vendas do TikTok neste período (carregue os ficheiros do TikTok e mapeie o dicionário).</td></tr>';
 
   // Tabela famílias — COMBINADO
   let htmlFamCombo='';
